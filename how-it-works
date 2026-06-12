@@ -1,0 +1,204 @@
+import { useState } from "react";
+
+// ─── The six steps ─────────────────────────────────────────────────
+const STEPS = [
+  { n: "01", t: "take the quiz", d: "a 3-minute assessment. no wrong answers." },
+  { n: "02", t: "meet your archetype", d: "one of five. it themes your whole experience." },
+  { n: "03", t: "get matched", d: "a small group of women near you." },
+  { n: "04", t: "show up", d: "curated events, on the calendar. together." },
+  { n: "05", t: "get coached", d: "a coach in your corner the whole way." },
+  { n: "06", t: "keep the streak", d: "earn points for showing up. iconic." },
+];
+
+// ─── The five archetypes (pop / tint / ink per hue) ────────────────
+const ARCHES = [
+  { id: "Bloomer", c: "#ED6CA8", t: "#FBDDEC", i: "#97265F", line: "growing into herself; ready to open up and be seen.", voice: "you came to bloom. let\u2019s go." },
+  { id: "Spark", c: "#C264D8", t: "#F0D9F7", i: "#762B88", line: "high-energy connector who lights up every room.", voice: "go light it up." },
+  { id: "Transformer", c: "#8B6CF6", t: "#E4DCFB", i: "#4A2C9E", line: "in the middle of real change; reinventing, on purpose.", voice: "here we go." },
+  { id: "Returner", c: "#6E7BF2", t: "#DCE0FB", i: "#2E37A2", line: "coming back to herself after a season away.", voice: "your seat\u2019s still warm." },
+  { id: "Still Water", c: "#4F9FE8", t: "#D2E6FA", i: "#1E5C97", line: "calm, deep, observant. quality over quantity.", voice: "calm is your superpower." },
+];
+
+// ─── Main Block ────────────────────────────────────────────────────
+export default function Block() {
+  const [sel, setSel] = useState(2);
+  const a = ARCHES[sel];
+
+  return (
+    <section className="ubh-wrap">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Hanken+Grotesque:wght@400;500;700&family=DM+Mono:wght@500&display=swap');
+
+        .ubh-wrap {
+          --ubh-ink: #17141F;
+          --ubh-ink-soft: #615C70;
+          --ubh-violet: #8B6CF6;
+          --ubh-paper-2: #ECE9F7;
+          font-family: 'Hanken Grotesque', system-ui, sans-serif;
+          text-align: center;
+        }
+        .ubh-wrap *, .ubh-wrap *::before, .ubh-wrap *::after { box-sizing: border-box; }
+
+        .ubh-kicker {
+          font-family: 'DM Mono', ui-monospace, monospace;
+          font-size: 14px; font-weight: 500; letter-spacing: 0.1em;
+          text-transform: uppercase; color: var(--ubh-violet); margin-bottom: 16px;
+        }
+        .ubh-h2 {
+          font-family: 'Baloo 2', system-ui, sans-serif;
+          font-weight: 800; font-size: clamp(34px, 6vw, 64px);
+          letter-spacing: -0.01em; color: var(--ubh-ink);
+          margin: 0; text-transform: uppercase; line-height: 0.95;
+        }
+
+        /* ── part 1: the whole thing ── */
+        .ubh-how { background: #FFFFFF; padding: 110px 28px; }
+        .ubh-how-inner { max-width: 1080px; margin: 0 auto; }
+        .ubh-grid {
+          display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+          margin-top: 60px; text-align: left;
+        }
+        .ubh-card { background: var(--ubh-paper-2); border-radius: 22px; padding: 30px; }
+        .ubh-card .ubh-n {
+          font-family: 'DM Mono', ui-monospace, monospace;
+          font-weight: 500; font-size: 13px; color: var(--ubh-violet); margin-bottom: 16px;
+        }
+        .ubh-card h3 {
+          font-family: 'Baloo 2', system-ui, sans-serif;
+          font-weight: 700; font-size: 26px; color: var(--ubh-ink); margin: 0 0 8px;
+        }
+        .ubh-card p { font-size: 16px; line-height: 1.5; color: var(--ubh-ink-soft); margin: 0; }
+
+        /* ── part 2: which one are you? ── */
+        .ubh-arch {
+          background: linear-gradient(180deg, #FFFFFF 0%, #ECE6FB 60%, #E2D9FA 100%);
+          padding: 110px 28px 120px;
+        }
+        .ubh-arch-inner { max-width: 1000px; margin: 0 auto; }
+        .ubh-lead {
+          font-size: 18px; line-height: 1.5; color: var(--ubh-ink-soft);
+          max-width: 40ch; margin: 20px auto 0;
+        }
+        .ubh-blob-row {
+          display: flex; gap: 18px; justify-content: center; flex-wrap: wrap;
+          margin: 56px 0 12px;
+        }
+        .ubh-pick {
+          background: none; border: none; cursor: pointer;
+          display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 6px;
+        }
+        .ubh-blob {
+          position: relative; display: inline-block;
+          width: 92px; height: 92px;
+          border-radius: 47% 53% 44% 56% / 58% 42% 58% 42%;
+          transition: transform .25s cubic-bezier(0.34,1.56,0.64,1), box-shadow .25s;
+          box-shadow: 0 2px 8px rgba(23,20,31,0.06);
+        }
+        .ubh-blob.ubh-on { transform: scale(1.08); box-shadow: 0 18px 48px rgba(23,20,31,0.12); }
+        .ubh-blob span { position: absolute; background: var(--ubh-ink); }
+        .ubh-eye { top: 40%; width: 8%; height: 12%; border-radius: 50%; }
+        .ubh-eye-l { left: 31%; }
+        .ubh-eye-r { left: 58.5%; }
+        .ubh-mouth { top: 57%; left: 40%; width: 18%; height: 8.5%; border-radius: 0 0 999px 999px; }
+        .ubh-pick-label {
+          font-family: 'Baloo 2', system-ui, sans-serif;
+          font-weight: 700; font-size: 17px; color: var(--ubh-ink-soft); transition: color .2s;
+        }
+        .ubh-pick-label.ubh-on { color: var(--ubh-ink); }
+        .ubh-detail {
+          background: #FFFFFF; border-radius: 44px; padding: 48px 44px;
+          max-width: 620px; margin: 40px auto 0;
+          box-shadow: 0 8px 24px rgba(23,20,31,0.09); transition: all .3s;
+        }
+        .ubh-detail-name {
+          font-family: 'Baloo 2', system-ui, sans-serif;
+          font-weight: 800; font-size: clamp(34px, 5vw, 52px);
+          letter-spacing: -0.01em; color: var(--ubh-ink); line-height: 1;
+        }
+        .ubh-detail-line { font-size: 19px; line-height: 1.5; color: var(--ubh-ink-soft); margin: 16px 0 0; }
+        .ubh-detail-voice {
+          font-family: 'Baloo 2', system-ui, sans-serif;
+          font-weight: 700; font-size: 24px; margin: 22px 0 0; letter-spacing: -0.01em;
+        }
+
+        /* ── tablet (640–1023px) ── */
+        @media (min-width: 640px) and (max-width: 1023px) {
+          .ubh-how { padding: 90px 32px; }
+          .ubh-arch { padding: 90px 32px 100px; }
+          .ubh-grid { grid-template-columns: repeat(2, 1fr); margin-top: 48px; }
+          .ubh-blob { width: 80px; height: 80px; }
+          .ubh-blob-row { gap: 14px; margin-top: 44px; }
+        }
+
+        /* ── phone (<640px) ── */
+        @media (max-width: 639px) {
+          .ubh-how { padding: 72px 20px; }
+          .ubh-arch { padding: 72px 20px 84px; }
+          .ubh-kicker { font-size: 11px; margin-bottom: 12px; }
+          .ubh-grid { grid-template-columns: 1fr; gap: 12px; margin-top: 36px; }
+          .ubh-card { padding: 24px; }
+          .ubh-card h3 { font-size: 22px; }
+          .ubh-card p { font-size: 15px; }
+          .ubh-lead { font-size: 16px; }
+          .ubh-blob-row { gap: 6px; margin: 36px 0 8px; }
+          .ubh-pick { gap: 10px; padding: 4px; }
+          .ubh-blob { width: 62px; height: 62px; }
+          .ubh-pick-label { font-size: 13px; }
+          .ubh-detail { border-radius: 28px; padding: 32px 24px; }
+          .ubh-detail-line { font-size: 16px; }
+          .ubh-detail-voice { font-size: 20px; }
+        }
+      `}</style>
+
+      {/* ── the whole thing ── */}
+      <div className="ubh-how">
+        <div className="ubh-how-inner">
+          <div className="ubh-kicker">the whole thing</div>
+          <h2 className="ubh-h2">here&rsquo;s how it works</h2>
+          <div className="ubh-grid">
+            {STEPS.map((s) => (
+              <div className="ubh-card" key={s.n}>
+                <div className="ubh-n">{s.n}</div>
+                <h3>{s.t}</h3>
+                <p>{s.d}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── which one are you? ── */}
+      <div className="ubh-arch">
+        <div className="ubh-arch-inner">
+          <div className="ubh-kicker">take the quiz &middot; get yours</div>
+          <h2 className="ubh-h2">which one are you?</h2>
+          <p className="ubh-lead">five archetypes, one for every way of connecting. tap one to meet her.</p>
+
+          <div className="ubh-blob-row">
+            {ARCHES.map((x, idx) => (
+              <button key={x.id} className="ubh-pick" onClick={() => setSel(idx)} type="button">
+                <span
+                  className={"ubh-blob" + (idx === sel ? " ubh-on" : "")}
+                  style={{ background: "radial-gradient(circle at 35% 28%, " + x.t + ", " + x.c + " 92%)" }}
+                >
+                  <span className="ubh-eye ubh-eye-l"></span>
+                  <span className="ubh-eye ubh-eye-r"></span>
+                  <span className="ubh-mouth"></span>
+                </span>
+                <span className={"ubh-pick-label" + (idx === sel ? " ubh-on" : "")}>{x.id}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="ubh-detail">
+            <div className="ubh-detail-name">{a.id}</div>
+            <p className="ubh-detail-line">{a.line}</p>
+            <p className="ubh-detail-voice" style={{ color: a.i }}>
+              &ldquo;{a.voice}&rdquo;
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
