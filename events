@@ -1,0 +1,413 @@
+import { Button } from "@/components/ui/button";
+import { useEffect, useRef, useState } from "react";
+import { ArrowRight } from "lucide-react";
+
+const SIGNUP_URL = "/sign-up";
+
+// ─── Member avatars (Cloudinary) ───────────────────────────────────
+const AV = "https://res.cloudinary.com/dw3hngxzi/image/upload";
+const AVATARS = [
+  AV + "/v1781294737/white-blazer-pearl-earrings_hxsi4y.png",
+  AV + "/v1781294737/red-headwrap-bracelets_qzv5ua.png",
+  AV + "/v1781294737/pink-sunglasses-white-shirt_rqi6na.png",
+  AV + "/v1781294736/brunette-cream-top_wthtkt.png",
+  AV + "/v1781294736/peach-cap-choker-smile_nuglgv.png",
+  AV + "/v1781294735/blonde-white-blouse_rh6fwl.png",
+  AV + "/v1781294736/curly-hair-big-smile_xhcgz3.png",
+  AV + "/v1781294735/braids-black-top_srone9.png",
+  AV + "/v1781294735/blue-jumper-long-bob_yhnrqy.png",
+  AV + "/v1781294735/blonde-profile-sunglasses_em0ioe.png",
+  AV + "/v1781294734/bantu-knots-laughing_oxvrkk.png",
+  AV + "/v1781294734/aviator-glasses-denim_sffupu.png",
+  AV + "/v1781294734/black-white-blonde-bob_yskqhb.png",
+  AV + "/v1781294734/black-bob-dark-shirt_b71zqg.png",
+];
+
+// ─── Polaroid photos pinned on cards (cycled per event) ──────────
+const EVENT_PHOTOS = [
+  AV + "/v1781263133/street-selfie-duo_yifgd9.png",
+  AV + "/v1781263133/living-room-drinks-hangout_jkfvzh.png",
+  AV + "/v1781263133/bar-cocktails-girls-night_jtutm0.png",
+  AV + "/v1781263136/couch-laughs-girl-gang_mbueom.png",
+  AV + "/v1781263136/dinner-table-cocktail-pour_uvxcso.png",
+  AV + "/v1781263135/pink-diner-neon-squad_bnkelf.png",
+  AV + "/v1781263135/bedroom-dance-party_pasjmp.png",
+  AV + "/v1781263135/noodle-dinner-flowers_krmvhm.png",
+  AV + "/v1781263134/festival-four-peace-sign_f3gea6.png",
+  AV + "/v1781263135/confetti-selfie-four-friends_eb1iub.png",
+];
+
+// ─── Cities ────────────────────────────────────────────────────────
+const CITIES = [
+  "all", "london", "manchester", "birmingham", "bristol", "liverpool",
+  "glasgow", "leeds", "edinburgh", "newcastle", "belfast", "sheffield",
+  "nottingham", "cardiff", "brighton", "cambridge",
+];
+
+// ─── Events: [city, experience, date, time, neighbourhood, invite] ─
+// invite: "friend" = unboring invited your friend · "you" = unboring invited you · "blind" = blind hang
+const EVENTS = [
+  ["london", "reformer pilates & matcha", "sat 13 jun", "09:30", "london fields", "friend"],
+  ["london", "pottery & prosecco: wheel throwing", "sat 13 jun", "14:00", "peckham", "blind"],
+  ["london", "padel & spritz: doubles social", "mon 15 jun", "18:30", "shoreditch", "you"],
+  ["london", "pub pints & pictures: life drawing edition", "tue 16 jun", "18:45", "brixton", "you"],
+  ["london", "girls' dinner & woman-owned wine bar", "thu 18 jun", "19:00", "primrose hill", "blind"],
+  ["london", "girls' night & y2k karaoke", "fri 19 jun", "19:30", "soho", "blind"],
+  ["manchester", "reformer pilates & matcha", "sat 13 jun", "09:30", "ancoats", "friend"],
+  ["manchester", "bouldering & smoothies", "sun 14 jun", "11:30", "northern quarter", "you"],
+  ["manchester", "supper club & natural wine", "mon 15 jun", "18:30", "chorlton", "blind"],
+  ["manchester", "padel & spritz: doubles social", "wed 17 jun", "18:45", "spinningfields", "you"],
+  ["manchester", "sip, paint & spritz night", "thu 18 jun", "18:45", "didsbury", "friend"],
+  ["manchester", "comedy night & cocktails", "fri 19 jun", "19:30", "northern quarter", "blind"],
+  ["birmingham", "sunday run club & coffee", "sun 14 jun", "10:00", "jewellery quarter", "friend"],
+  ["birmingham", "pottery & prosecco: wheel throwing", "sat 13 jun", "14:00", "digbeth", "blind"],
+  ["birmingham", "reformer pilates & matcha", "mon 15 jun", "09:30", "moseley", "friend"],
+  ["birmingham", "dinner & drinks at neighbourhood favourite", "wed 17 jun", "19:00", "harborne", "you"],
+  ["birmingham", "listening bar & natural wine", "thu 18 jun", "19:00", "digbeth", "you"],
+  ["birmingham", "girls' dinner & woman-owned wine bar", "fri 19 jun", "19:00", "kings heath", "blind"],
+  ["bristol", "matcha & morning run club", "sat 13 jun", "08:30", "the harbourside", "friend"],
+  ["bristol", "reformer pilates & matcha", "sun 14 jun", "09:30", "clifton", "friend"],
+  ["bristol", "sauna social & cold plunge", "mon 15 jun", "19:00", "harbourside", "you"],
+  ["bristol", "sip, paint & spritz night", "tue 16 jun", "18:45", "stokes croft", "you"],
+  ["bristol", "open-air cinema & street food", "wed 17 jun", "20:00", "bedminster", "blind"],
+  ["bristol", "comedy night & cocktails", "fri 19 jun", "19:30", "gloucester road", "blind"],
+  ["liverpool", "reformer pilates & matcha", "sat 13 jun", "09:30", "the georgian quarter", "friend"],
+  ["liverpool", "bouldering & smoothies", "sun 14 jun", "11:30", "baltic triangle", "you"],
+  ["liverpool", "dinner & drinks at neighbourhood favourite", "mon 15 jun", "19:00", "lark lane", "you"],
+  ["liverpool", "roller disco & street food", "wed 17 jun", "19:00", "baltic triangle", "blind"],
+  ["liverpool", "cocktail masterclass & small plates", "thu 18 jun", "19:00", "bold street", "blind"],
+  ["liverpool", "padel & spritz: doubles social", "fri 19 jun", "18:45", "the albert dock", "you"],
+  ["glasgow", "sunday run club & coffee", "sun 14 jun", "10:00", "kelvingrove park", "friend"],
+  ["glasgow", "reformer pilates & matcha", "sat 13 jun", "09:30", "finnieston", "friend"],
+  ["glasgow", "supper club & natural wine", "mon 15 jun", "18:30", "merchant city", "blind"],
+  ["glasgow", "sip, paint & spritz night", "tue 16 jun", "18:45", "the west end", "you"],
+  ["glasgow", "listening bar & natural wine", "thu 18 jun", "19:00", "finnieston", "you"],
+  ["glasgow", "comedy night & cocktails", "fri 19 jun", "19:30", "shawlands", "blind"],
+  ["leeds", "matcha & morning run club", "sat 13 jun", "08:30", "roundhay park", "friend"],
+  ["leeds", "reformer pilates & matcha", "sun 14 jun", "09:30", "chapel allerton", "friend"],
+  ["leeds", "padel & spritz: doubles social", "mon 15 jun", "18:30", "the calls", "you"],
+  ["leeds", "pottery & prosecco: wheel throwing", "tue 16 jun", "14:00", "north street", "blind"],
+  ["leeds", "girls' dinner & woman-owned wine bar", "thu 18 jun", "19:00", "headingley", "blind"],
+  ["leeds", "comedy night & cocktails", "fri 19 jun", "19:30", "call lane", "you"],
+  ["edinburgh", "reformer pilates & matcha", "sat 13 jun", "09:30", "stockbridge", "friend"],
+  ["edinburgh", "sunday run club & coffee", "sun 14 jun", "10:00", "the meadows", "friend"],
+  ["edinburgh", "sauna social & cold plunge", "mon 15 jun", "19:00", "leith", "you"],
+  ["edinburgh", "sip, paint & spritz night", "tue 16 jun", "18:45", "the grassmarket", "you"],
+  ["edinburgh", "listening bar & natural wine", "thu 18 jun", "19:00", "leith", "blind"],
+  ["edinburgh", "girls' dinner & woman-owned wine bar", "fri 19 jun", "19:00", "bruntsfield", "blind"],
+  ["newcastle", "matcha & morning run club", "sat 13 jun", "08:30", "jesmond dene", "friend"],
+  ["newcastle", "reformer pilates & matcha", "sun 14 jun", "09:30", "jesmond", "friend"],
+  ["newcastle", "dinner & drinks at neighbourhood favourite", "mon 15 jun", "19:00", "the quayside", "you"],
+  ["newcastle", "roller disco & street food", "wed 17 jun", "19:00", "ouseburn", "blind"],
+  ["newcastle", "comedy night & cocktails", "thu 18 jun", "19:30", "grainger town", "you"],
+  ["newcastle", "padel & spritz: doubles social", "fri 19 jun", "18:45", "ouseburn", "blind"],
+  ["belfast", "reformer pilates & matcha", "sat 13 jun", "09:30", "the botanic quarter", "friend"],
+  ["belfast", "sunday run club & coffee", "sun 14 jun", "10:00", "botanic gardens", "friend"],
+  ["belfast", "supper club & natural wine", "mon 15 jun", "18:30", "the cathedral quarter", "blind"],
+  ["belfast", "sip, paint & spritz night", "tue 16 jun", "18:45", "ormeau road", "you"],
+  ["belfast", "listening bar & natural wine", "thu 18 jun", "19:00", "the cathedral quarter", "you"],
+  ["belfast", "dinner & drinks at neighbourhood favourite", "fri 19 jun", "19:00", "the titanic quarter", "blind"],
+  ["sheffield", "matcha & morning run club", "sat 13 jun", "08:30", "endcliffe park", "friend"],
+  ["sheffield", "reformer pilates & matcha", "sun 14 jun", "09:30", "ecclesall road", "friend"],
+  ["sheffield", "bouldering & smoothies", "mon 15 jun", "18:45", "kelham island", "you"],
+  ["sheffield", "dinner & drinks at neighbourhood favourite", "wed 17 jun", "19:00", "nether edge", "you"],
+  ["sheffield", "comedy night & cocktails", "thu 18 jun", "19:30", "kelham island", "blind"],
+  ["sheffield", "girls' dinner & woman-owned wine bar", "fri 19 jun", "19:00", "ecclesall road", "blind"],
+  ["nottingham", "reformer pilates & matcha", "sat 13 jun", "09:30", "west bridgford", "friend"],
+  ["nottingham", "pottery & prosecco: wheel throwing", "sat 13 jun", "14:00", "sneinton market", "blind"],
+  ["nottingham", "padel & spritz: doubles social", "mon 15 jun", "18:30", "the lace market", "you"],
+  ["nottingham", "sip, paint & spritz night", "tue 16 jun", "18:45", "hockley", "you"],
+  ["nottingham", "comedy night & cocktails", "thu 18 jun", "19:30", "hockley", "blind"],
+  ["nottingham", "girls' dinner & woman-owned wine bar", "fri 19 jun", "19:00", "west bridgford", "blind"],
+  ["cardiff", "sunday run club & coffee", "sun 14 jun", "10:00", "bute park", "friend"],
+  ["cardiff", "reformer pilates & matcha", "sat 13 jun", "09:30", "pontcanna", "friend"],
+  ["cardiff", "dinner & drinks at neighbourhood favourite", "mon 15 jun", "19:00", "cardiff bay", "you"],
+  ["cardiff", "sip, paint & spritz night", "tue 16 jun", "18:45", "canton", "you"],
+  ["cardiff", "listening bar & natural wine", "thu 18 jun", "19:00", "wellfield road", "blind"],
+  ["cardiff", "comedy night & cocktails", "fri 19 jun", "19:30", "the castle quarter", "blind"],
+  ["brighton", "matcha & morning run club", "sat 13 jun", "08:30", "hove seafront", "friend"],
+  ["brighton", "reformer pilates & matcha", "sun 14 jun", "09:30", "hove", "friend"],
+  ["brighton", "sea swim & sauna social", "mon 15 jun", "08:00", "kemptown", "you"],
+  ["brighton", "sip, paint & spritz night", "tue 16 jun", "18:45", "the north laine", "you"],
+  ["brighton", "girls' night & y2k karaoke", "thu 18 jun", "19:30", "kemptown", "blind"],
+  ["brighton", "girls' dinner & woman-owned wine bar", "fri 19 jun", "19:00", "seven dials", "blind"],
+  ["cambridge", "sunday run club & coffee", "sun 14 jun", "10:00", "jesus green", "friend"],
+  ["cambridge", "reformer pilates & matcha", "sat 13 jun", "09:30", "newnham", "friend"],
+  ["cambridge", "pottery & prosecco: wheel throwing", "mon 15 jun", "18:45", "mill road", "you"],
+  ["cambridge", "dinner & drinks at neighbourhood favourite", "wed 17 jun", "19:00", "mill road", "you"],
+  ["cambridge", "comedy night & cocktails", "thu 18 jun", "19:30", "the city centre", "blind"],
+  ["cambridge", "girls' dinner & woman-owned wine bar", "fri 19 jun", "19:00", "romsey", "blind"],
+];
+
+// ─── Invite tag ────────────────────────────────────────────────────
+function InviteTag({ invite, avatarIndex }) {
+  if (invite === "blind") {
+    return (
+      <span className="ube-tag">
+        <span className="ube-heart">&#9825;</span>
+        <span><b>blind hang</b> invited by unboring</span>
+        <span className="ube-chev">&rsaquo;</span>
+      </span>
+    );
+  }
+  return (
+    <span className="ube-tag">
+      <img className="ube-tag-avatar" src={AVATARS[avatarIndex % AVATARS.length]} alt="" />
+      <span>unboring invited <b>{invite === "friend" ? "your friend" : "you"}</b></span>
+      <span className="ube-chev">&rsaquo;</span>
+    </span>
+  );
+}
+
+// ─── Main Block ────────────────────────────────────────────────────
+export default function Block() {
+  const [city, setCity] = useState("london");
+  const trackRef = useRef(null);
+
+  // jump back to the start of the carousel when the city changes
+  useEffect(() => {
+    if (trackRef.current) trackRef.current.scrollTo({ left: 0 });
+  }, [city]);
+
+  const slide = (dir) => {
+    const t = trackRef.current;
+    if (!t) return;
+    const target = Math.max(0, t.scrollLeft + dir * t.clientWidth * 0.9);
+    t.scrollTo({ left: target, behavior: "smooth" });
+    // fallback for environments where smooth scrolling stalls (frozen webviews, embeds)
+    const before = t.scrollLeft;
+    setTimeout(() => {
+      if (Math.abs(t.scrollLeft - before) < 2) t.scrollTo({ left: target, behavior: "instant" });
+    }, 300);
+  };
+
+  // "all" shows one upcoming event per city
+  const visible =
+    city === "all"
+      ? CITIES.filter((c) => c !== "all").map((c) => EVENTS.find((e) => e[0] === c))
+      : EVENTS.filter((e) => e[0] === city);
+
+  const handleSignUp = (e) => {
+    e.preventDefault();
+    if (typeof window !== "undefined" && window.Softr?.modal?.open) {
+      window.Softr.modal.open(SIGNUP_URL);
+      return;
+    }
+    window.location.href = SIGNUP_URL;
+  };
+
+  return (
+    <section className="ube-wrap">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Hanken+Grotesque:wght@400;500;700&family=DM+Mono:wght@500&display=swap');
+
+        .ube-wrap {
+          --ube-ink: #17141F;
+          --ube-ink-soft: #615C70;
+          --ube-ink-faint: #A39EB2;
+          --ube-violet: #8B6CF6;
+          --ube-rose: #ED6CA8;
+          --ube-paper: #F4F2FB;
+          --ube-paper-2: #ECE9F7;
+          --ube-line-strong: #D6CFE6;
+          background: linear-gradient(180deg, #E2D9FA 0%, #F0EBFA 55%, #FFFFFF 100%);
+          padding: 130px 28px 140px;
+          font-family: 'Hanken Grotesque', system-ui, sans-serif;
+          color: var(--ube-ink);
+        }
+        .ube-wrap *, .ube-wrap *::before, .ube-wrap *::after { box-sizing: border-box; }
+        .ube-inner { max-width: 1140px; margin: 0 auto; }
+
+        /* ── header: label left, city tabs right ── */
+        .ube-head { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+        .ube-kicker {
+          font-family: 'DM Mono', ui-monospace, monospace;
+          font-size: 14px; font-weight: 500; letter-spacing: 0.1em;
+          text-transform: uppercase; color: var(--ube-violet); flex: none;
+        }
+        .ube-tabs {
+          display: flex; gap: 8px; overflow-x: auto; min-width: 0; max-width: 640px; margin-left: auto;
+          scrollbar-width: none; -webkit-overflow-scrolling: touch; padding: 4px;
+        }
+        .ube-tabs::-webkit-scrollbar { display: none; }
+        .ube-tab {
+          font-family: 'Hanken Grotesque', system-ui, sans-serif;
+          font-size: 14px; font-weight: 500; color: var(--ube-ink-soft);
+          background: none; border: 1.5px solid transparent; border-radius: 999px;
+          padding: 7px 14px; cursor: pointer; white-space: nowrap; flex: none;
+          transition: color .2s, border-color .2s, background .2s;
+        }
+        .ube-tab:hover { color: var(--ube-ink); }
+        .ube-tab.ube-on {
+          color: var(--ube-ink); border-color: var(--ube-ink); background: #FFFFFF;
+          font-weight: 700;
+        }
+
+        /* ── tagline ── */
+        .ube-tagline {
+          font-family: 'Baloo 2', system-ui, sans-serif;
+          font-weight: 800; font-size: clamp(34px, 5vw, 56px);
+          letter-spacing: -0.01em; line-height: 1.0; text-transform: uppercase;
+          margin: 44px 0 0; max-width: 700px;
+        }
+        .ube-sub { font-size: 18px; line-height: 1.5; color: var(--ube-ink-soft); margin: 16px 0 0; }
+
+        /* ── carousel: three up, slide for more ── */
+        .ube-arrows { display: flex; gap: 10px; justify-content: flex-end; margin-top: 32px; }
+        .ube-arrow {
+          width: 44px; height: 44px; border-radius: 50%; border: none; cursor: pointer;
+          background: #FFFFFF; color: var(--ube-ink); font-size: 24px; line-height: 1;
+          box-shadow: 0 2px 8px rgba(23,20,31,0.1); display: grid; place-items: center;
+          padding-bottom: 3px; transition: transform .15s, box-shadow .2s;
+        }
+        .ube-arrow:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(23,20,31,0.16); }
+        .ube-track {
+          display: flex; gap: 20px; overflow-x: auto;
+          scroll-snap-type: x proximity; scrollbar-width: none;
+          padding: 62px 4px 20px; margin-top: -16px;
+        }
+        .ube-track::-webkit-scrollbar { display: none; }
+
+        /* ── cards: pastel gradients, hand-tilted, polaroid pinned on top ── */
+        .ube-card {
+          flex: none; width: calc((100% - 40px) / 3); scroll-snap-align: start;
+          min-height: 460px;
+          border-radius: 28px; padding: 0 28px 34px;
+          display: flex; flex-direction: column; align-items: center;
+          text-align: center;
+          transition: transform .25s cubic-bezier(0.34,1.56,0.64,1), box-shadow .25s;
+        }
+        .ube-card:nth-child(odd) { transform: rotate(-1.2deg); }
+        .ube-card:nth-child(even) { transform: rotate(1deg); }
+        .ube-card:hover { transform: rotate(0deg) translateY(-6px); box-shadow: 0 18px 48px rgba(23,20,31,0.14); }
+        .ube-g1 { background: linear-gradient(160deg, #FBDDEC 0%, #F0D9F7 100%); }
+        .ube-g2 { background: linear-gradient(160deg, #F0D9F7 0%, #E4DCFB 100%); }
+        .ube-g3 { background: linear-gradient(160deg, #E4DCFB 0%, #DCE0FB 100%); }
+        .ube-g4 { background: linear-gradient(160deg, #DCE0FB 0%, #D2E6FA 100%); }
+        .ube-g5 { background: linear-gradient(160deg, #D2E6FA 0%, #FBDDEC 100%); }
+        .ube-photo { width: 122px; margin-top: -46px; filter: drop-shadow(0 6px 14px rgba(0,0,0,0.18)); }
+        .ube-photo img { display: block; width: 100%; }
+        .ube-card:nth-child(odd) .ube-photo { transform: rotate(-6deg); }
+        .ube-card:nth-child(even) .ube-photo { transform: rotate(5deg); }
+        .ube-name {
+          font-family: 'Baloo 2', system-ui, sans-serif;
+          font-weight: 700; font-size: 25px; line-height: 1.22; color: var(--ube-ink);
+          margin: auto 0 0; text-wrap: balance; max-width: 17ch;
+          /* reserve two lines so date + tag rows line up across every card */
+          min-height: 2.44em; display: flex; align-items: center; justify-content: center;
+        }
+        .ube-meta {
+          font-family: 'DM Mono', ui-monospace, monospace;
+          font-size: 12.5px; color: var(--ube-ink-faint); letter-spacing: 0.02em;
+          margin-top: 16px;
+        }
+        .ube-tag {
+          margin-top: 26px; margin-bottom: auto;
+          display: inline-flex; align-items: center; gap: 7px;
+          font-size: 13px; color: var(--ube-ink-soft);
+          background: rgba(255,255,255,0.78); border-radius: 999px; padding: 8px 16px;
+          min-height: 38px;
+        }
+        .ube-tag b { color: var(--ube-ink); font-weight: 700; }
+        .ube-tag-avatar { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex: none; }
+        .ube-heart { color: var(--ube-rose); font-size: 16px; line-height: 1; }
+        .ube-chev { color: var(--ube-ink-faint); font-size: 16px; line-height: 1; }
+
+        .ube-cta-wrap { text-align: center; margin-top: 52px; }
+        .ube-wrap .ube-cta {
+          font-family: 'Hanken Grotesque', system-ui, sans-serif;
+          font-weight: 700; border: none; cursor: pointer; border-radius: 999px;
+          display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+          white-space: nowrap; height: auto; padding: 17px 32px; font-size: 18px;
+        }
+
+        /* ── tablet (640–1023px) ── */
+        @media (min-width: 640px) and (max-width: 1023px) {
+          .ube-wrap { padding: 90px 32px 100px; }
+          .ube-head { flex-direction: column; align-items: flex-start; gap: 16px; }
+          .ube-tabs { width: 100%; }
+          .ube-card { width: calc((100% - 20px) / 2); min-height: 430px; }
+        }
+
+        /* ── phone (<640px): cards scroll sideways ── */
+        @media (max-width: 639px) {
+          .ube-wrap { padding: 72px 0 84px; }
+          .ube-inner { padding: 0 20px; }
+          .ube-head { flex-direction: column; align-items: flex-start; gap: 14px; }
+          .ube-kicker { font-size: 11px; }
+          .ube-tabs { width: calc(100% + 20px); padding-right: 20px; }
+          .ube-tagline { margin-top: 26px; }
+          .ube-sub { font-size: 15px; }
+          .ube-track { margin: 0 -20px; padding: 44px 20px 16px; gap: 14px; }
+          .ube-card { width: 282px; min-height: 400px; padding: 0 22px 26px; }
+          .ube-name { font-size: 21px; min-height: 2.5em; }
+          .ube-arrows { display: none; }
+          .ube-cta-wrap { margin-top: 36px; }
+          .ube-wrap .ube-cta { min-height: 48px; font-size: 16px; padding: 13px 30px; }
+        }
+      `}</style>
+
+      <div className="ube-inner">
+        <div className="ube-head">
+          <div className="ube-kicker">experiences</div>
+          <div className="ube-tabs">
+            {CITIES.map((c) => (
+              <button
+                key={c}
+                type="button"
+                className={"ube-tab" + (c === city ? " ube-on" : "")}
+                onClick={() => setCity(c)}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <h2 className="ube-tagline">explore your city. or a new one.</h2>
+        <p className="ube-sub">your membership works across all 15 cities (and counting).</p>
+
+        <div className="ube-arrows">
+          <button type="button" className="ube-arrow" onClick={() => slide(-1)} aria-label="previous events">&lsaquo;</button>
+          <button type="button" className="ube-arrow" onClick={() => slide(1)} aria-label="more events">&rsaquo;</button>
+        </div>
+
+        <div className="ube-track" ref={trackRef}>
+          {visible.map((ev, i) => (
+            <div
+              className={"ube-card ube-g" + ((i % 5) + 1)}
+              key={city + ev[0] + ev[1] + ev[2]}
+            >
+              <span className="ube-photo">
+                <img src={EVENT_PHOTOS[EVENTS.indexOf(ev) % EVENT_PHOTOS.length]} alt="" />
+              </span>
+              <h3 className="ube-name">{ev[1]}</h3>
+              <div className="ube-meta">
+                {ev[2]} &middot; {ev[3]} &middot; {ev[4]}{city === "all" ? ", " + ev[0] : ""}
+              </div>
+              <InviteTag invite={ev[5]} avatarIndex={EVENTS.indexOf(ev)} />
+            </div>
+          ))}
+        </div>
+
+        <div className="ube-cta-wrap">
+          <Button
+            onClick={handleSignUp}
+            className="ube-cta font-bold group"
+            style={{
+              background: "linear-gradient(120deg, #8B6CF6 0%, #ED6CA8 100%)",
+              color: "#fff",
+              boxShadow: "0 12px 32px rgba(139, 108, 246, 0.38)",
+            }}
+          >
+            sign up
+            <ArrowRight
+              className="ml-2 group-hover:translate-x-1 transition-transform"
+              style={{ width: 18, height: 18 }}
+            />
+          </Button>
+        </div>
+      </div>
+    </section>
+  );
+}
