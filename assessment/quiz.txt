@@ -1,0 +1,332 @@
+// unboring — the friendship quiz (Quiz page, /quiz)
+// One question per screen, single-tap auto-advance, real scoring (ported from the
+// Claude Design reports.js engine). On finish it derives the star sign from the
+// birthday, saves one assessments row, and redirects to /friend-report?id=<id>.
+// Friend character + archetype are written as links to their reference tables.
+import { useState } from "react";
+import { useRecordCreate, q } from "@/lib/datasource";
+import { toast } from "sonner";
+
+const RESULT_URL = "/friend-report";
+const EXIT_URL = "/friendship-quiz";
+
+// ── assessments table field ids ───────────────────────────────────
+const fields = q.select({
+  name: "QH7Pq", email: "lO5Tm", phone: "OSdN9", dob: "myj26", starSign: "S3CyZ",
+  friendCharacter: "eaNfW", archetype: "M49n5", availability: "N2cg1", location: "0bxxn",
+  interests: "EL80y", characterScores: "s3isn", archetypeScores: "nomxt", answers: "hFqTw", source: "0Hvzs",
+});
+
+// design id → reference-table record id
+const CHAR_REC = { "safe-place": "6q93tcbYryME7g", "truth-teller": "j1UznBI9zPEzNv", "ride-or-die": "YivV4LN7kC5HeF", "hype-woman": "jIjWYzCT5egE4u", "live-wire": "pVHDeNfLEvS3GN" };
+const ARCH_REC = { spark: "J5TLg2s8eCgGGR", "still-water": "3qkJXknW4T9mWA", bloomer: "ij8coOoHOFiab0", returner: "ToRSau4Cd4Iotg", transformer: "TIwopeHHl4mF2X" };
+const CITY = { london: "ALkpBLu9ewolTP", manchester: "phdsbSMaTnK9ie", birmingham: "1WcgtRbSPDf32j", bristol: "4k4VcNC5wRxu4Q", liverpool: "joUCl1HesS8hQr", glasgow: "osaaL5leOjngGU", leeds: "PHLMeKIcqyW5jK", edinburgh: "aiMsjQOdXN3qqm", newcastle: "WYI8yDtA63GrfL", belfast: "BWfTP7nZWI1gVt", sheffield: "tClq9fjbVrp2uY", nottingham: "dRLGjw6MiRPHj0", cardiff: "3vno2PfQoAHOaM", brighton: "e2pzJVCxn2WDqN", cambridge: "TCiEI2G97bezNf" };
+
+const CHAR_ORDER = ["ride-or-die", "truth-teller", "safe-place", "hype-woman", "live-wire"];
+const ARCH_ORDER = ["bloomer", "returner", "transformer", "still-water", "spark"];
+const CHAR_IDS = ["safe-place", "truth-teller", "ride-or-die", "hype-woman", "live-wire"];
+const ARCH_IDS = ["spark", "still-water", "bloomer", "returner", "transformer"];
+
+const QUESTIONS = [
+  { id: "C1", kind: "char", q: "it's 11pm and a friend calls in bits about a breakup. before you've even thought about it, you're…", o: [
+    { t: "telling her the honest truth about him, gently", w: { "truth-teller": 3 } },
+    { t: "just letting her talk for as long as she needs", w: { "safe-place": 3 } },
+    { t: "grabbing your keys, already heading over", w: { "ride-or-die": 3 } },
+    { t: "reminding her how incredible she is until she believes it", w: { "hype-woman": 3 } },
+    { t: "planning the thing that gets her back on her feet", w: { "live-wire": 3 } },
+  ]},
+  { id: "C2", kind: "char", q: "your friend lands the job she's been chasing for months. you're the one who…", o: [
+    { t: "throws the celebration before she's even off the phone", w: { "live-wire": 3 } },
+    { t: "tells everyone who'll listen how amazing she is", w: { "hype-woman": 3 } },
+    { t: "turns up that night with champagne, no plans needed", w: { "ride-or-die": 3 } },
+    { t: "quietly checks how she's feeling under all the excitement", w: { "safe-place": 3 } },
+    { t: "reminds her to negotiate the offer, she's worth more", w: { "truth-teller": 3 } },
+  ]},
+  { id: "C3", kind: "char", q: "a friend's in the wrong in a fallout with someone else. you…", o: [
+    { t: "tell her straight she's got this one wrong", w: { "truth-teller": 3 } },
+    { t: "back her in the room, then talk to her honestly after", w: { "ride-or-die": 2, "truth-teller": 1 } },
+    { t: "focus on how she's feeling before who's right", w: { "safe-place": 3 } },
+    { t: "lighten it and get everyone laughing again", w: { "live-wire": 3 } },
+    { t: "remind her of all the times she got it right", w: { "hype-woman": 3 } },
+  ]},
+  { id: "C4", kind: "char", tie: true, q: "when you're the one falling apart, what do you most want from a friend?", o: [
+    { t: "someone who'll tell me the truth even if it stings", w: { "truth-teller": 3 } },
+    { t: "someone who'll just sit with me and listen", w: { "safe-place": 3 } },
+    { t: "someone who shows up, no questions asked", w: { "ride-or-die": 3 } },
+    { t: "someone who reminds me who i am", w: { "hype-woman": 3 } },
+    { t: "someone who gets me out and back into life", w: { "live-wire": 3 } },
+  ]},
+  { id: "C5", kind: "char", q: "your friendship shows up most in…", o: [
+    { t: "the long, honest chats where nothing's off limits", w: { "truth-teller": 3, "safe-place": 1 } },
+    { t: "being the person they can fall apart with", w: { "safe-place": 3 } },
+    { t: "always turning up, rain or shine", w: { "ride-or-die": 3 } },
+    { t: "hyping them up, loudly and publicly", w: { "hype-woman": 3 } },
+    { t: "the plans, the trips, the nights and days out", w: { "live-wire": 3 } },
+  ]},
+  { id: "A1", kind: "type", tie: true, q: "what kind of evening fills your cup?", o: [
+    { t: "a big dinner with 6+ people, lots of laughing", w: { spark: 4, transformer: 1 } },
+    { t: "a long, deep conversation with one or two friends", w: { "still-water": 4, returner: 1, bloomer: 1 } },
+    { t: "something active with others — a walk, a class, a project", w: { transformer: 3, bloomer: 2, spark: 1, returner: 1 } },
+    { t: "solo with a book, maybe one good message to a friend", w: { returner: 3, "still-water": 2 } },
+  ]},
+  { id: "A2", kind: "type", q: "what season of life are you in right now?", o: [
+    { t: "reinventing — career change, identity shift, new chapter", w: { transformer: 4, spark: 1, bloomer: 1 } },
+    { t: "rebuilding after something tough — a loss, a break, burnout", w: { returner: 4, bloomer: 1 } },
+    { t: "settled, but my social life isn't where i want it", w: { bloomer: 2, "still-water": 2, returner: 1 } },
+    { t: "coasting, ready to shake things up", w: { transformer: 3, spark: 2, bloomer: 1 } },
+  ]},
+  { id: "M1", kind: "match", q: "how often can you realistically make plans?", o: [
+    { t: "about weekly", v: "weekly" },
+    { t: "every other week", v: "fortnightly" },
+    { t: "about once a month", v: "monthly" },
+  ]},
+  { id: "M2", kind: "location", q: "what city or area are you based in?", placeholder: "e.g. manchester, south london, leeds…" },
+  { id: "M3", kind: "interests", q: "what are you into? pick anything that sounds like you.", o: ["brunch","hikes & walks","pottery & crafts","yoga","galleries & art","cinema","live music","books","wellness","volunteering","travel","cooking & food","comedy","markets","theatre","dance","running","cycling"] },
+  { id: "D", kind: "details", q: "last bit, then your result." },
+];
+const KICKER = { char: "your character", type: "your type", match: "your fit", location: "your fit", interests: "your fit", details: "almost there" };
+
+// ── scoring (ported from reports.js) ──────────────────────────────
+function maxPossible(ids, kind) {
+  const max = {}; ids.forEach((id) => (max[id] = 0));
+  QUESTIONS.filter((qq) => qq.kind === kind).forEach((qq) => {
+    ids.forEach((id) => {
+      let best = 0;
+      qq.o.forEach((opt) => { if (opt.w && opt.w[id]) best = Math.max(best, opt.w[id]); });
+      max[id] += best;
+    });
+  });
+  return max;
+}
+function scoreQuiz(ans) {
+  const cs = {}; CHAR_IDS.forEach((i) => (cs[i] = 0));
+  const as = {}; ARCH_IDS.forEach((i) => (as[i] = 0));
+  QUESTIONS.forEach((qq) => {
+    if (!qq.o || ans[qq.id] == null) return;
+    const opt = qq.o[ans[qq.id]];
+    if (!opt || !opt.w) return;
+    Object.entries(opt.w).forEach(([k, v]) => { if (cs[k] != null) cs[k] += v; if (as[k] != null) as[k] += v; });
+  });
+  const cMax = maxPossible(CHAR_IDS, "char"), aMax = maxPossible(ARCH_IDS, "type");
+  const cN = {}; CHAR_IDS.forEach((i) => (cN[i] = cMax[i] ? +(cs[i] / cMax[i]).toFixed(4) : 0));
+  const aN = {}; ARCH_IDS.forEach((i) => (aN[i] = aMax[i] ? +(as[i] / aMax[i]).toFixed(4) : 0));
+  const pick = (norm, order, tieId) => {
+    const top = Math.max(...Object.values(norm));
+    const tied = Object.keys(norm).filter((k) => Math.abs(norm[k] - top) < 1e-9);
+    if (tied.length === 1) return tied[0];
+    const tq = QUESTIONS.find((x) => x.id === tieId);
+    const opt = tq && tq.o[ans[tieId]];
+    if (opt && opt.w) {
+      const fav = Object.keys(opt.w).sort((a, b) => opt.w[b] - opt.w[a])[0];
+      if (tied.includes(fav)) return fav;
+    }
+    for (const id of order) if (tied.includes(id)) return id;
+    return tied[0];
+  };
+  return { character: pick(cN, CHAR_ORDER, "C4"), archetype: pick(aN, ARCH_ORDER, "A1"), charNorm: cN, archNorm: aN };
+}
+function starSign(m, d) {
+  const v = m * 100 + d;
+  if (v >= 321 && v <= 419) return "aries";
+  if (v >= 420 && v <= 520) return "taurus";
+  if (v >= 521 && v <= 620) return "gemini";
+  if (v >= 621 && v <= 722) return "cancer";
+  if (v >= 723 && v <= 822) return "leo";
+  if (v >= 823 && v <= 922) return "virgo";
+  if (v >= 923 && v <= 1022) return "libra";
+  if (v >= 1023 && v <= 1121) return "scorpio";
+  if (v >= 1122 && v <= 1221) return "sagittarius";
+  if (v >= 1222 || v <= 119) return "capricorn";
+  if (v >= 120 && v <= 218) return "aquarius";
+  return "pisces";
+}
+const emailOk = (s) => /.+@.+\..+/.test((s || "").trim());
+
+export default function Block() {
+  const [step, setStep] = useState(0); // 0 = intro, 1..11 = QUESTIONS, 12 = loading/submit
+  const [a, setA] = useState({ interests: [], details: { name: "", email: "", phone: "", dob: "" } });
+
+  const createRecord = useRecordCreate({
+    fields,
+    onSuccess: (rec) => {
+      const id = rec && (rec.id || rec.recordId || (rec.data && rec.data.id));
+      window.location.href = RESULT_URL + (id ? "?id=" + id : "");
+    },
+    onError: (e) => { setStep(11); toast.error(`something went wrong: ${e.message}`); },
+  });
+
+  const TOTAL = QUESTIONS.length; // 11
+  const setAns = (k, v) => setA((p) => ({ ...p, [k]: v }));
+  const setDetail = (k, v) => setA((p) => ({ ...p, details: { ...p.details, [k]: v } }));
+  const toggleInterest = (x) => setA((p) => ({ ...p, interests: p.interests.includes(x) ? p.interests.filter((y) => y !== x) : [...p.interests, x] }));
+
+  const go = (n) => setStep(n);
+  const advance = () => { const n = step + 1; if (n > TOTAL) submit(); else go(n); };
+  const pick = (qid, idx) => { setAns(qid, idx); setTimeout(() => { setStep((s) => Math.min(s + 1, TOTAL + 1)); }, 200); };
+
+  function submit() {
+    const res = scoreQuiz(a);
+    const dob = a.details.dob;
+    let sign = "";
+    if (dob) { const p = dob.split("-").map(Number); sign = starSign(p[1], p[2]); }
+    const locText = (a.M2 || "").trim();
+    const cityId = CITY[locText.toLowerCase()] || undefined;
+    setStep(TOTAL + 1); // loading
+    createRecord.mutate({
+      name: a.details.name, email: a.details.email, phone: a.details.phone,
+      dob: dob ? new Date(dob).toISOString() : null,
+      starSign: sign || undefined,
+      friendCharacter: CHAR_REC[res.character],
+      archetype: ARCH_REC[res.archetype],
+      availability: a.M1 || undefined,
+      location: cityId,
+      interests: a.interests,
+      characterScores: JSON.stringify(res.charNorm),
+      archetypeScores: JSON.stringify(res.archNorm),
+      answers: JSON.stringify({ C1: a.C1, C2: a.C2, C3: a.C3, C4: a.C4, C5: a.C5, A1: a.A1, A2: a.A2, availability: a.M1, location: locText, interests: a.interests }),
+      source: "cold",
+    });
+  }
+
+  const detailsValid = a.details.name.trim() && emailOk(a.details.email) && a.details.phone.trim() && a.details.dob;
+  const pct = step === 0 ? 0 : Math.min(100, ((step - 1) / TOTAL) * 100 + (step > TOTAL ? 100 : 0));
+
+  return (
+    <div className="uq">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Hanken+Grotesque:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+        .uq{--paper:#F4F2FB;--paper-2:#ECE9F7;--cloud:#FFFFFF;--ink:#17141F;--ink-soft:#615C70;--ink-faint:#A39EB2;--line:#E5E0F0;--line-strong:#D6CFE6;--violet:#8B6CF6;--violet-tint:#E4DCFB;--grad-cta:linear-gradient(120deg,#8B6CF6 0%,#EC5E92 100%);--glow-cta:0 12px 32px rgba(139,108,246,.38);--glow-violet:0 10px 30px rgba(157,107,224,.32);--radius-sm:8px;--radius-md:14px;--radius-pill:999px;--fd:'Baloo 2',sans-serif;--fb:'Hanken Grotesque',sans-serif;--fm:'DM Mono',monospace;--dur:240ms;--dur-fast:140ms;--ease-out:cubic-bezier(.22,1,.36,1);--ease-spring:cubic-bezier(.34,1.56,.64,1);font-family:var(--fb);color:var(--ink);background:var(--paper);min-height:100vh;display:flex;flex-direction:column;}
+        .uq *{margin:0;padding:0;box-sizing:border-box;}
+        .uq button{font-family:inherit;}
+        .uq .bar{height:5px;background:var(--line);flex:0 0 auto;}
+        .uq .fill{height:100%;background:var(--grad-cta);border-radius:0 99px 99px 0;transition:width var(--dur) var(--ease-out);}
+        .uq .top{display:flex;align-items:center;justify-content:space-between;padding:14px clamp(16px,4vw,32px);flex:0 0 auto;}
+        .uq .nav-btn{font-family:var(--fm);font-size:13px;letter-spacing:.04em;color:var(--ink-soft);background:none;border:none;cursor:pointer;padding:8px 10px;border-radius:99px;display:inline-flex;align-items:center;gap:6px;}
+        .uq .nav-btn:hover{background:var(--paper-2);color:var(--ink);}
+        .uq .nav-btn[data-hide=true]{visibility:hidden;}
+        .uq .stage{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:clamp(16px,4vw,40px) clamp(20px,5vw,32px) clamp(48px,8vw,80px);}
+        .uq .screen{width:100%;max-width:600px;margin:0 auto;animation:uqIn .42s var(--ease-out);}
+        @keyframes uqIn{from{transform:translateY(14px);opacity:.5;}to{transform:none;opacity:1;}}
+        .uq .k{font-family:var(--fm);font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--violet);margin-bottom:16px;}
+        .uq .title{font-family:var(--fd);font-weight:700;font-size:clamp(26px,4.4vw,38px);line-height:1.12;letter-spacing:-.012em;}
+        .uq .opts{display:flex;flex-direction:column;gap:12px;margin-top:clamp(24px,4vw,36px);}
+        .uq .opt{text-align:left;background:var(--cloud);border:1.5px solid var(--line);border-radius:var(--radius-md);padding:18px 20px;font-family:var(--fb);font-size:17px;line-height:1.4;color:var(--ink);cursor:pointer;display:flex;align-items:center;gap:14px;transition:border-color var(--dur),background var(--dur),transform var(--dur-fast) var(--ease-out),box-shadow var(--dur);}
+        .uq .opt .dot{flex:0 0 auto;width:22px;height:22px;border-radius:50%;border:2px solid var(--line-strong);transition:border-color var(--dur),background var(--dur);position:relative;}
+        .uq .opt:hover{border-color:var(--violet);background:color-mix(in oklab,var(--violet-tint) 28%,#fff);transform:translateX(2px);}
+        .uq .opt:hover .dot{border-color:var(--violet);}
+        .uq .opt.picked{border-color:var(--violet);background:var(--violet-tint);box-shadow:var(--glow-violet);}
+        .uq .opt.picked .dot{border-color:var(--violet);background:var(--violet);}
+        .uq .opt.picked .dot::after{content:"";position:absolute;inset:4px;border-radius:50%;background:#fff;}
+        .uq .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:clamp(22px,4vw,32px);}
+        .uq .chip{font-family:var(--fb);font-size:15.5px;background:var(--cloud);border:1.5px solid var(--line);color:var(--ink);border-radius:var(--radius-pill);padding:11px 18px;cursor:pointer;transition:all var(--dur-fast) var(--ease-out);}
+        .uq .chip:hover{border-color:var(--violet);}
+        .uq .chip.on{background:var(--violet);border-color:var(--violet);color:#fff;}
+        .uq .fields{display:flex;flex-direction:column;gap:16px;margin-top:clamp(22px,4vw,32px);}
+        .uq .field label{display:block;font-family:var(--fm);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:7px;}
+        .uq .field input{width:100%;font-family:var(--fb);font-size:17px;color:var(--ink);background:var(--cloud);border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:15px 16px;transition:border-color var(--dur),box-shadow var(--dur);}
+        .uq .field input:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 3px color-mix(in oklab,var(--violet) 30%,transparent);}
+        .uq .field input::placeholder{color:var(--ink-faint);}
+        .uq .foot{margin-top:clamp(24px,4vw,34px);display:flex;align-items:center;gap:16px;}
+        .uq .note{font-size:13.5px;color:var(--ink-faint);line-height:1.4;}
+        .uq .btn{font-family:var(--fb);font-weight:700;font-size:18px;border:none;cursor:pointer;border-radius:var(--radius-pill);padding:17px 34px;display:inline-flex;align-items:center;gap:10px;background:var(--grad-cta);color:#fff;box-shadow:var(--glow-cta);transition:transform var(--dur) var(--ease-spring),box-shadow var(--dur);}
+        .uq .btn:hover{transform:translateY(-2px);} .uq .btn:active{transform:scale(.97);} .uq .btn[disabled]{opacity:.5;cursor:default;transform:none;}
+        .uq .intro,.uq .load{text-align:center;}
+        .uq .intro h2{font-family:var(--fd);font-weight:800;font-size:clamp(32px,6vw,52px);letter-spacing:-.02em;line-height:1;}
+        .uq .intro h2 em{font-style:normal;background:var(--grad-cta);-webkit-background-clip:text;background-clip:text;color:transparent;}
+        .uq .intro p{color:var(--ink-soft);font-size:18px;margin:18px auto 0;max-width:34ch;line-height:1.5;}
+        .uq .intro .btn{margin-top:30px;} .uq .intro .meta{font-family:var(--fm);font-size:12.5px;color:var(--ink-faint);margin-top:18px;}
+        .uq .load h2{font-family:var(--fd);font-weight:700;font-size:clamp(26px,4vw,36px);} .uq .load p{color:var(--ink-soft);margin-top:12px;font-family:var(--fm);font-size:13px;}
+        .uq .cblob{position:relative;width:var(--size,120px);height:var(--size,120px);font-size:var(--size,120px);margin:0 auto clamp(20px,4vw,30px);border-radius:47% 53% 44% 56%/58% 42% 58% 42%;background:radial-gradient(circle at 36% 30%,#FBD9EC,#E0C3FC 48%,#CBDDFF 82%);box-shadow:inset 0 .04em .09em rgba(255,255,255,.55),0 .06em .16em rgba(23,20,31,.12);}
+        .uq .cblob.bob{animation:uqBob 1.1s var(--ease-spring) infinite;}
+        @keyframes uqBob{0%,100%{transform:translateY(0);}50%{transform:translateY(-16px);}}
+        .uq .cb-eye{position:absolute;top:40%;width:.088em;height:.13em;border-radius:50%;background:#17141F;} .uq .cb-eye.l{left:31%;} .uq .cb-eye.r{right:31%;}
+        .uq .cb-grin{position:absolute;left:50%;top:56%;transform:translateX(-50%);width:.2em;height:.1em;background:#17141F;border-radius:0 0 1em 1em;}
+      `}</style>
+
+      <div className="bar"><div className="fill" style={{ width: pct + "%" }} /></div>
+      <div className="top">
+        <button className="nav-btn" data-hide={step <= 0 || step > TOTAL} onClick={() => go(Math.max(0, step - 1))}>← back</button>
+        <a className="nav-btn" href={EXIT_URL} style={{ textDecoration: "none" }}>exit</a>
+      </div>
+
+      <div className="stage">
+        {step === 0 && (
+          <div className="screen intro" key="intro">
+            <div className="cblob" style={{ "--size": "120px" }}><span className="cb-eye l" /><span className="cb-eye r" /><span className="cb-grin" /></div>
+            <h2>what kind of <em>friend</em> are you?</h2>
+            <p>a few honest questions about how you show up for the people you love. two minutes, then your result.</p>
+            <button className="btn" onClick={() => go(1)}>start the quiz</button>
+            <div className="meta">free · everyone gets their result</div>
+          </div>
+        )}
+
+        {step >= 1 && step <= TOTAL && (() => {
+          const Q = QUESTIONS[step - 1];
+          const kick = `${KICKER[Q.kind]} · ${step} of ${TOTAL}`;
+          return (
+            <div className="screen" key={Q.id}>
+              <div className="k">{kick}</div>
+              <h2 className="title">{Q.q}</h2>
+
+              {(Q.kind === "char" || Q.kind === "type") && (
+                <div className="opts">
+                  {Q.o.map((opt, i) => (
+                    <button className={"opt" + (a[Q.id] === i ? " picked" : "")} key={i} onClick={() => pick(Q.id, i)}>
+                      <span className="dot" />{opt.t}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {Q.kind === "match" && (
+                <div className="opts">
+                  {Q.o.map((opt, i) => (
+                    <button className={"opt" + (a.M1 === opt.v ? " picked" : "")} key={i} onClick={() => { setAns("M1", opt.v); setTimeout(() => go(step + 1), 200); }}>
+                      <span className="dot" />{opt.t}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {Q.kind === "location" && (
+                <>
+                  <div className="fields"><div className="field"><input value={a.M2 || ""} placeholder={Q.placeholder} onChange={(e) => setAns("M2", e.target.value)} /></div></div>
+                  <div className="foot"><button className="btn" disabled={!(a.M2 || "").trim()} onClick={advance}>continue</button></div>
+                </>
+              )}
+
+              {Q.kind === "interests" && (
+                <>
+                  <div className="chips">
+                    {Q.o.map((x) => (<button className={"chip" + (a.interests.includes(x) ? " on" : "")} key={x} onClick={() => toggleInterest(x)}>{x}</button>))}
+                  </div>
+                  <div className="foot"><button className="btn" onClick={advance}>continue</button><span className="note">pick as many as you like</span></div>
+                </>
+              )}
+
+              {Q.kind === "details" && (
+                <>
+                  <div className="fields">
+                    <div className="field"><label>name</label><input value={a.details.name} onChange={(e) => setDetail("name", e.target.value)} /></div>
+                    <div className="field"><label>email</label><input type="email" value={a.details.email} onChange={(e) => setDetail("email", e.target.value)} /></div>
+                    <div className="field"><label>phone</label><input type="tel" value={a.details.phone} onChange={(e) => setDetail("phone", e.target.value)} /></div>
+                    <div className="field"><label>date of birth</label><input type="date" value={a.details.dob} onChange={(e) => setDetail("dob", e.target.value)} /></div>
+                  </div>
+                  <div className="foot"><button className="btn" disabled={!detailsValid} onClick={advance}>see my result</button><span className="note">we use your birthday to sharpen the read, never shown.</span></div>
+                </>
+              )}
+            </div>
+          );
+        })()}
+
+        {step > TOTAL && (
+          <div className="screen load" key="load">
+            <div className="cblob bob" style={{ "--size": "120px" }}><span className="cb-eye l" /><span className="cb-eye r" /><span className="cb-grin" /></div>
+            <h2>finding your friend character…</h2>
+            <p>reading how you show up</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
