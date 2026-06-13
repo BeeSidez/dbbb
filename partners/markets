@@ -1,0 +1,44 @@
+// unboring partners — block 2: markets (live cities)
+const UBP2_CITIES = [
+  "london", "manchester", "birmingham", "bristol", "liverpool", "glasgow", "leeds",
+  "edinburgh", "newcastle", "belfast", "sheffield", "nottingham", "cardiff", "brighton", "cambridge",
+];
+
+export default function Block() {
+  return (
+    <div className="ubp2">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Hanken+Grotesque:wght@400;500;700&family=DM+Mono:wght@500&display=swap');
+        .ubp2 {
+          --ink: #17141F; --ink-soft: #615C70; --line: #D6CFE6;
+          --fd: 'Baloo 2', sans-serif; --fb: 'Hanken Grotesque', sans-serif;
+          font-family: var(--fb); color: var(--ink);
+        }
+        .ubp2 *, .ubp2 *::before, .ubp2 *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        .ubp2 .cities { background: #F4F2FB; text-align: center; padding: 110px 28px; }
+        .ubp2 .inner { max-width: 1140px; margin: 0 auto; }
+        .ubp2 h2 { font-family: var(--fd); font-weight: 800; text-transform: uppercase; letter-spacing: -0.01em; line-height: 0.98; font-size: clamp(36px, 5vw, 60px); }
+        .ubp2 .sub { font-size: 19px; line-height: 1.55; color: var(--ink-soft); margin: 14px auto 0; max-width: 560px; }
+        .ubp2 .city-cloud { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 44px auto 0; max-width: 760px; }
+        .ubp2 .city {
+          font-family: var(--fb); font-size: 15px; font-weight: 500; color: var(--ink);
+          background: #fff; border: 1.5px solid var(--line); border-radius: 999px; padding: 10px 20px;
+        }
+        .ubp2 .city.hl { border-color: var(--ink); font-weight: 700; }
+        @media (max-width: 900px) { .ubp2 .cities { padding: 80px 24px; } }
+      `}</style>
+
+      <section className="cities" data-screen-label="cities">
+        <div className="inner">
+          <h2>live across 15 uk cities</h2>
+          <p className="sub">and growing every month.</p>
+          <div className="city-cloud">
+            {UBP2_CITIES.map((c) => (
+              <span key={c} className={"city" + (c === "london" ? " hl" : "")}>{c}</span>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
