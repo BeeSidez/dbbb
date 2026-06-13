@@ -1,0 +1,178 @@
+// unboring partners — block 4: how you can partner (dining / venues / curators)
+import { useEffect, useState } from "react";
+
+const UBP4_TYPES = [
+  {
+    id: "dining",
+    photo: "https://res.cloudinary.com/dw3hngxzi/image/upload/v1781263135/noodle-dinner-flowers_krmvhm.png",
+    name: "for dining",
+    desc: "restaurants, wine bars & supper clubs — host the intimate first table",
+  },
+  {
+    id: "venues",
+    photo: "https://res.cloudinary.com/dw3hngxzi/image/upload/v1781263135/pink-diner-neon-squad_bnkelf.png",
+    name: "for venues",
+    desc: "bars, caf\u00e9s, galleries & more — 20 to 100 members on your night",
+  },
+  {
+    id: "curators",
+    photo: "https://res.cloudinary.com/dw3hngxzi/image/upload/v1781263135/confetti-selfie-four-friends_eb1iub.png",
+    name: "for curators",
+    desc: "pilates, pottery, run clubs & classes — we fill it, you keep 90%",
+  },
+];
+
+export default function Block() {
+  const [tab, setTab] = useState("dining");
+
+  // hero block CTAs dispatch this event to preselect a tab
+  useEffect(() => {
+    const onPick = (e) => {
+      if (e.detail === "dining" || e.detail === "venues" || e.detail === "curators") setTab(e.detail);
+    };
+    window.addEventListener("unboring-pick-tab", onPick);
+    return () => window.removeEventListener("unboring-pick-tab", onPick);
+  }, []);
+
+  return (
+    <div className="ubp4">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Hanken+Grotesque:wght@400;500;700&family=DM+Mono:wght@500&display=swap');
+        .ubp4 {
+          --ink: #17141F; --ink-soft: #615C70; --violet: #8B6CF6;
+          --rose-t: #FBDDEC; --tang-t: #F0D9F7; --violet-t: #E4DCFB; --ocean-t: #D2E6FA;
+          --fd: 'Baloo 2', sans-serif; --fb: 'Hanken Grotesque', sans-serif; --fm: 'DM Mono', monospace;
+          font-family: var(--fb); color: var(--ink);
+        }
+        .ubp4 *, .ubp4 *::before, .ubp4 *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        .ubp4 .types { background: #F4F2FB; padding: 110px 28px; }
+        .ubp4 .inner { max-width: 1140px; margin: 0 auto; }
+        .ubp4 .kicker { font-family: var(--fm); font-size: 14px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--violet); margin-bottom: 22px; }
+        .ubp4 h2 { font-family: var(--fd); font-weight: 800; text-transform: uppercase; letter-spacing: -0.01em; line-height: 0.98; font-size: clamp(36px, 5vw, 60px); }
+        .ubp4 .sub { font-size: 17px; line-height: 1.55; color: var(--ink-soft); max-width: 560px; margin-top: 18px; }
+
+        .ubp4 .type-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 48px; }
+        .ubp4 .type-card {
+          position: relative; border: none; cursor: pointer; text-align: center;
+          border-radius: 26px; padding: 0 24px 26px; font-family: var(--fb);
+          display: flex; flex-direction: column; align-items: center; gap: 8px;
+          transition: transform .25s cubic-bezier(0.34,1.56,0.64,1), box-shadow .25s;
+          box-shadow: 0 2px 10px rgba(23,20,31,0.06);
+        }
+        .ubp4 .type-card:nth-child(1) { background: linear-gradient(160deg, var(--rose-t), var(--tang-t)); transform: rotate(-1.2deg); }
+        .ubp4 .type-card:nth-child(2) { background: linear-gradient(160deg, var(--tang-t), var(--violet-t)); transform: rotate(0.9deg); }
+        .ubp4 .type-card:nth-child(3) { background: linear-gradient(160deg, var(--violet-t), var(--ocean-t)); transform: rotate(-0.8deg); }
+        .ubp4 .type-card:hover { transform: rotate(0deg) translateY(-6px); box-shadow: 0 16px 40px rgba(23,20,31,0.14); }
+        .ubp4 .tc-photo { width: 116px; margin-top: -38px; filter: drop-shadow(0 6px 14px rgba(0,0,0,0.18)); transition: transform .25s; }
+        .ubp4 .type-card:nth-child(1) .tc-photo { transform: rotate(-6deg); }
+        .ubp4 .type-card:nth-child(2) .tc-photo { transform: rotate(5deg); }
+        .ubp4 .type-card:nth-child(3) .tc-photo { transform: rotate(-5deg); }
+        .ubp4 .type-card:hover .tc-photo { transform: rotate(0deg) scale(1.04); }
+        .ubp4 .tc-photo img { display: block; width: 100%; }
+        .ubp4 .tc-name { font-family: var(--fd); font-weight: 800; font-size: 26px; text-transform: uppercase; letter-spacing: -0.01em; color: var(--ink); }
+        .ubp4 .tc-desc { font-size: 14.5px; line-height: 1.45; color: var(--ink-soft); max-width: 250px; }
+        .ubp4 .tc-pick {
+          margin-top: 10px; font-family: var(--fm); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+          color: var(--ink); background: rgba(255,255,255,0.8); border-radius: 999px; padding: 8px 18px;
+          transition: background .2s, color .2s;
+        }
+        .ubp4 .type-card.on { transform: rotate(0deg) translateY(-6px); box-shadow: 0 0 0 2.5px var(--ink), 0 16px 40px rgba(23,20,31,0.16); }
+        .ubp4 .type-card.on .tc-pick { background: var(--ink); color: #fff; }
+
+        .ubp4 .type-panel { margin-top: 26px; border-radius: 30px; padding: 54px 56px 56px; animation: ubp4FadeUp .35s ease; }
+        .ubp4 .type-panel.p-dining { background: linear-gradient(160deg, var(--rose-t), var(--tang-t)); }
+        .ubp4 .type-panel.p-venues { background: linear-gradient(160deg, var(--tang-t), var(--violet-t)); }
+        .ubp4 .type-panel.p-curators { background: linear-gradient(160deg, var(--violet-t), var(--ocean-t)); }
+        @keyframes ubp4FadeUp { from { transform: translateY(12px); } to { transform: none; } }
+        @media (prefers-reduced-motion: reduce) { .ubp4 .type-panel { animation: none; } }
+        .ubp4 .type-panel h3 { font-family: var(--fd); font-weight: 800; font-size: clamp(28px, 3.6vw, 42px); text-transform: uppercase; line-height: 1.0; letter-spacing: -0.01em; }
+        .ubp4 .mini-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 38px; }
+        .ubp4 .mini-step { background: rgba(255,255,255,0.85); border-radius: 22px; padding: 28px 26px; box-shadow: 0 2px 8px rgba(23,20,31,0.05); }
+        .ubp4 .mini-step:nth-child(odd) { transform: rotate(-0.7deg); }
+        .ubp4 .mini-step:nth-child(even) { transform: rotate(0.6deg); }
+        .ubp4 .mini-step .mn { font-family: var(--fd); font-weight: 800; font-size: 40px; line-height: 1; color: var(--ink); margin-bottom: 12px; }
+        .ubp4 .mini-step p { font-size: 15.5px; line-height: 1.5; color: var(--ink-soft); }
+        .ubp4 .mini-step p b { color: var(--ink); }
+        .ubp4 .features { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 18px; }
+        .ubp4 .feature { border-radius: 20px; padding: 24px 22px; background: rgba(255,255,255,0.6); }
+        .ubp4 .feature b { display: block; font-size: 15.5px; margin-bottom: 7px; }
+        .ubp4 .feature p { font-size: 14px; line-height: 1.5; color: var(--ink-soft); }
+
+        @media (max-width: 900px) {
+          .ubp4 .types { padding: 80px 24px; }
+          .ubp4 .type-cards { grid-template-columns: 1fr; gap: 40px; }
+          .ubp4 .type-card { margin-top: 24px; }
+          .ubp4 .type-panel { padding: 36px 26px 38px; }
+          .ubp4 .mini-steps { grid-template-columns: 1fr; }
+          .ubp4 .features { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 560px) { .ubp4 .features { grid-template-columns: 1fr; } }
+      `}</style>
+
+      <section className="types" id="types" data-screen-label="partner-types">
+        <div className="inner">
+          <div className="kicker">how you can partner</div>
+          <h2>three ways in.</h2>
+
+          <div className="type-cards">
+            {UBP4_TYPES.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={"type-card" + (tab === t.id ? " on" : "")}
+                onClick={() => setTab(t.id)}
+              >
+                <span className="tc-photo"><img src={t.photo} alt="" /></span>
+                <span className="tc-name">{t.name}</span>
+                <span className="tc-desc">{t.desc}</span>
+                <span className="tc-pick">see how</span>
+              </button>
+            ))}
+          </div>
+
+          {tab === "dining" && (
+            <div className="type-panel p-dining">
+              <h3>host an intimate group to open the night.</h3>
+              <p className="sub">restaurants, wine bars, and supper clubs: we seat a group of 5 to 7 for a shared meal, the opening portion of their experience. a warm, easy booking on a date that suits you.</p>
+              <div className="mini-steps">
+                <div className="mini-step"><div className="mn">01</div><p><b>pick a date.</b> the day and time that works for you.</p></div>
+                <div className="mini-step"><div className="mn">02</div><p><b>host a group of 5 to 7.</b> a table set aside for the first portion of the night.</p></div>
+                <div className="mini-step"><div className="mn">03</div><p><b>get feedback.</b> clear, actionable insight from your guests, straight to you.</p></div>
+              </div>
+            </div>
+          )}
+
+          {tab === "venues" && (
+            <div className="type-panel p-venues">
+              <h3>drive footfall &amp; spend to your space.</h3>
+              <p className="sub">bars, caf&eacute;s, galleries, bowling alleys, saunas, any space that wants more people: we bring 20 to 100 members to you on a night you choose, without taking from your existing crowd.</p>
+              <div className="mini-steps">
+                <div className="mini-step"><div className="mn">01</div><p><b>pick a date.</b> find the right day and time. it's completely up to you.</p></div>
+                <div className="mini-step"><div className="mn">02</div><p><b>host the group.</b> open your doors to 20 to 100 members, with a dedicated home base for them to meet and mingle.</p></div>
+                <div className="mini-step"><div className="mn">03</div><p><b>get feedback.</b> immediate, actionable insight you won't get from public review sites.</p></div>
+              </div>
+              <div className="features">
+                <div className="feature"><b>your own dashboard.</b><p>summarised feedback, experience breakdowns, and individual comments after every night.</p></div>
+                <div className="feature"><b>content creation.</b><p>we send creators to capture content from the experience and share it with you.</p></div>
+                <div className="feature"><b>avenue for discovery.</b><p>most members are out exploring their city. if they love your venue, they come back in their own time.</p></div>
+                <div className="feature"><b>simple pricing.</b><p>&pound;2 to &pound;4 per member, charged only for those who check in. if you're ever unhappy, we refund it.</p></div>
+              </div>
+            </div>
+          )}
+
+          {tab === "curators" && (
+            <div className="type-panel p-curators">
+              <h3>fill your experience with the right crowd.</h3>
+              <p className="sub">pilates studios, pottery, life drawing, cocktail classes, run clubs: submit your experience, we send members we know will love it, and you keep 90% of ticket sales.</p>
+              <div className="mini-steps">
+                <div className="mini-step"><div className="mn">01</div><p><b>submit your experience.</b> set your price and dates through your dashboard.</p></div>
+                <div className="mini-step"><div className="mn">02</div><p><b>we sell the tickets.</b> to members matched for it, and you keep 90%.</p></div>
+                <div className="mini-step"><div className="mn">03</div><p><b>get feedback.</b> see what landed, straight from the people who came.</p></div>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
