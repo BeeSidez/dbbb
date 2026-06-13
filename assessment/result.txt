@@ -1,0 +1,277 @@
+// unboring — friend report (result + share card), the Friend Report page (/friend-report)
+// Reads the saved assessment row by id from the database and renders the full report
+// (8 sections from your characters library via lookups, name merged, star-sign tint on
+// "how you communicate", the archetype matching line) + the shareable character card + CTA.
+//
+// ── READ LAYER (the only Softr-specific glue; tweak here if the hook shape differs) ──
+import { useState } from "react";
+import { useRecord, useCurrentRecordId, q } from "@/lib/datasource";
+
+const fields = q.select({
+  name: "QH7Pq", character: "eaNfW", starSign: "S3CyZ",
+  sec1: "G9Nyu", sec2: "huwfJ", sec3: "Zo4Sz", sec4: "584Zm",
+  sec5: "tJLgs", sec6: "St8gU", sec7: "9ZhT8", sec8: "ZjVMQ",
+  matchingLine: "CRZ9A",
+});
+
+// pull a clean string out of whatever shape a field/lookup returns (string | {label} | [..])
+function val(x) {
+  if (x == null) return "";
+  if (Array.isArray(x)) return x.map(val).filter(Boolean).join(", ");
+  if (typeof x === "object") return x.label || x.value || x.name || x.text || "";
+  return String(x);
+}
+
+// ── report data that isn't worth a DB round-trip (tiny header bits + the 12 tints) ──
+const CHAR_META = {
+  "the safe place":   { id: "safe-place",   identity: "you're the one people fall apart in front of",       mesh: "truth-tellers & live wires" },
+  "the truth-teller": { id: "truth-teller", identity: "you're the one who keeps it real",                   mesh: "safe places & ride-or-dies" },
+  "the ride-or-die":  { id: "ride-or-die",  identity: "you're the one who shows up",                        mesh: "truth-tellers & safe places" },
+  "the hype woman":   { id: "hype-woman",   identity: "you're the one who makes everyone feel unstoppable", mesh: "live wires & safe places" },
+  "the live wire":    { id: "live-wire",    identity: "you're the one who gets everyone out of the house",  mesh: "hype women & safe places" },
+};
+const HUES = {
+  "safe-place":   { pop: "#4F9FE8", tint: "#D2E6FA", ink: "#1E5C97" },
+  "truth-teller": { pop: "#6E7BF2", tint: "#DCE0FB", ink: "#2E37A2" },
+  "ride-or-die":  { pop: "#8B6CF6", tint: "#E4DCFB", ink: "#4A2C9E" },
+  "hype-woman":   { pop: "#C264D8", tint: "#F0D9F7", ink: "#762B88" },
+  "live-wire":    { pop: "#ED6CA8", tint: "#FBDDEC", ink: "#97265F" },
+};
+const TINTS = {
+  aries: "you tend to say what you think the moment you think it, and you'd rather be direct than careful, even if it lands a beat too fast.",
+  taurus: "you're steady and unhurried in how you talk, warm but hard to shift once you've decided, and you say things plainly rather than dressing them up.",
+  gemini: "you talk in quick, curious bursts, hop between ideas, and you often think out loud, talking your way to what you mean as you go.",
+  cancer: "you communicate through care and mood, you read the room before you speak, and when something stings you tend to go quiet rather than spell it out.",
+  leo: "you're warm and expressive, generous with praise, and you say how you feel out loud, sooner too much than too cold.",
+  virgo: "you're precise and observant, you notice the details others miss, and your care often comes out as practical advice or a quiet bit of fixing.",
+  libra: "you're diplomatic and fair, you weigh both sides and smooth the edges, and you'll often soften a hard truth so nobody feels cornered.",
+  scorpio: "you keep your cards close and go deep rather than wide, you sense what's really going on underneath, and you give your trust slowly but completely.",
+  sagittarius: "you're frank and optimistic, you say the honest thing with a laugh, and you'd rather keep things light and moving than sit too long in the heavy stuff.",
+  capricorn: "you're understated and a little dry, not one for grand declarations, and you'd far sooner show you care than announce it.",
+  aquarius: "you're thoughtful and a touch detached, you process things in your own time, and you say what you mean without much fuss about how it lands.",
+  pisces: "you're gentle and intuitive, you pick up on what isn't said, and you lead with empathy, sometimes softening things so much the direct point gets lost.",
+};
+const SECTIONS = [
+  { t: "who you are", k: "sec1" },
+  { t: "what makes you a brilliant friend", k: "sec2" },
+  { t: "your blind spot", k: "sec3" },
+  { t: "how you communicate", k: "sec4", tint: true },
+  { t: "who you click with instantly", k: "sec5" },
+  { t: "who you clash with, and why it's worth it", k: "sec6" },
+  { t: "who balances you", k: "sec7" },
+  { t: "your perfect best friend", k: "sec8" },
+];
+
+function Blob({ id, size }) {
+  const lean = (id === "ride-or-die" || id === "live-wire") ? " cblob--lean" : "";
+  const inner = {
+    "safe-place": (<><span className="cb-arm cb-arm--hug-l" /><span className="cb-arm cb-arm--hug-r" /><span className="cb-eye l cb-eye--calm" /><span className="cb-eye r cb-eye--calm" /><span className="cb-mouth cb-mouth--soft" /></>),
+    "truth-teller": (<><span className="cb-eye l" /><span className="cb-eye r" /><span className="cb-brow" /><span className="cb-mouth cb-mouth--level" /></>),
+    "ride-or-die": (<><span className="cb-zip a" /><span className="cb-zip b" /><span className="cb-zip c" /><span className="cb-arm cb-arm--go" /><span className="cb-eye l" /><span className="cb-eye r" /><span className="cb-mouth cb-mouth--grin" /><span className="cb-heart" /></>),
+    "hype-woman": (<><span className="cb-arm cb-arm--up-l" /><span className="cb-arm cb-arm--up-r" /><span className="cb-eye l" /><span className="cb-eye r" /><span className="cb-blush l" /><span className="cb-blush r" /><span className="cb-mouth cb-mouth--wide" /><span className="cb-spark s1" /><span className="cb-spark s2" /><span className="cb-spark s3" /></>),
+    "live-wire": (<><span className="cb-zip a" /><span className="cb-zip b" /><span className="cb-zip c" /><span className="cb-eye l" /><span className="cb-eye r" /><span className="cb-blush l" /><span className="cb-blush r" /><span className="cb-mouth cb-mouth--wide" /><span className="cb-bolt" /></>),
+  }[id] || null;
+  return <div className={"cblob cblob--" + id + lean} style={{ "--size": size + "px" }}>{inner}</div>;
+}
+function BrandMark({ size }) {
+  return <div className="cblob cblob--brand" style={{ "--size": size + "px" }}><span className="cb-eye l" /><span className="cb-eye r" /><span className="cb-mouth cb-mouth--grin" /></div>;
+}
+const Word = () => (<span>unbor<span className="ic-dot">i</span>ng</span>);
+
+function ShareCard({ id, fmt, name, identity, mesh }) {
+  const sc = fmt === "tall" ? 0.3 : 0.33;
+  return (
+    <div className="scard-frame" style={{ "--w": (fmt === "tall" ? 1080 : 1080) + "px", "--h": (fmt === "tall" ? 1920 : 1080) + "px", "--sc": sc }}>
+      <div className={"scard scard--" + fmt + " scard--" + id}>
+        <div className="scard__top">what kind of friend are you?</div>
+        <div className="scard__body">
+          <Blob id={id} size={fmt === "tall" ? 470 : 380} />
+          <div className="scard__name">{name}</div>
+          <div className="scard__identity">{identity}</div>
+          <div className="scard__mesh">you mesh with {mesh}</div>
+        </div>
+        <div className="scard__foot">
+          <div className="scard__logo"><BrandMark size={fmt === "tall" ? 64 : 56} /><Word /></div>
+          <div className="scard__url">unboring.app/quiz</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function Block() {
+  const [fmt, setFmt] = useState("square");
+  const [toast, setToast] = useState("");
+
+  const urlId = (typeof window !== "undefined") ? new URLSearchParams(window.location.search).get("id") : null;
+  const pageId = useCurrentRecordId ? useCurrentRecordId() : null;
+  const recordId = pageId || urlId;
+  const query = useRecord ? useRecord({ fields, recordId }) : null;
+  const record = (query && (query.record || query.data || query.row)) || query || null;
+  const F = (record && (record.fields || record)) || {};
+
+  const charName = val(F.character);
+  const meta = CHAR_META[charName];
+
+  if (!charName || !meta) {
+    return (
+      <div className="ur" style={{ minHeight: "60vh", display: "grid", placeItems: "center" }}>
+        <style>{baseCSS}</style>
+        <div style={{ textAlign: "center", fontFamily: "'DM Mono',monospace", color: "#615C70", fontSize: 14 }}>finding your friend character…</div>
+      </div>
+    );
+  }
+
+  const id = meta.id;
+  const hue = HUES[id];
+  const first = (val(F.name).trim().split(/\s+/)[0]) || "friend";
+  const sign = val(F.starSign).toLowerCase();
+  const merge = (s) => String(s || "").replace(/\[name\]/g, first);
+  const sectionText = (S) => {
+    let txt = merge(val(F[S.k]));
+    if (S.tint && TINTS[sign]) txt = (txt ? txt + " " : "") + TINTS[sign];
+    return txt;
+  };
+
+  const copyLink = () => {
+    try { navigator.clipboard.writeText(window.location.href); setToast("link copied"); setTimeout(() => setToast(""), 1800); } catch (e) { setToast("couldn't copy"); setTimeout(() => setToast(""), 1800); }
+  };
+  const waShare = () => {
+    const t = encodeURIComponent(`i'm ${charName} — ${meta.identity}. what kind of friend are you? ${window.location.href}`);
+    window.open(`https://wa.me/?text=${t}`, "_blank");
+  };
+
+  return (
+    <div className="ur" style={{ "--c-pop": hue.pop, "--c-tint": hue.tint, "--c-ink": hue.ink }}>
+      <style>{baseCSS}</style>
+      <div className="result">
+        <div className="r-hero">
+          <div className="badge">your friend character</div>
+          <Blob id={id} size={132} />
+          <div className="r-name">{charName}</div>
+          <div className="r-identity">{meta.identity}, {first}.</div>
+          <div className="r-mesh">you mesh with {meta.mesh}</div>
+        </div>
+
+        <div className="r-divider" />
+
+        <div className="report">
+          {SECTIONS.map((S, i) => (
+            <div className="sec" key={S.k}>
+              <h3><span className="n">{String(i + 1).padStart(2, "0")}</span>{S.t}</h3>
+              <p>{sectionText(S)}</p>
+            </div>
+          ))}
+          <div className="r-typeline">
+            <div className="lab">your matching type</div>
+            <p>{merge(val(F.matchingLine))} and unboring puts you in a small group of women picked to fit, so the people who'll be that for you are already in the room.</p>
+          </div>
+        </div>
+
+        <div className="share-block">
+          <h3>share your character</h3>
+          <div className="sub">post it, send it to your group chat, see who your friends are.</div>
+          <div className="share-toggle">
+            <button className={fmt === "square" ? "on" : ""} onClick={() => setFmt("square")}>square</button>
+            <button className={fmt === "tall" ? "on" : ""} onClick={() => setFmt("tall")}>story</button>
+          </div>
+          <div className="share-card-wrap"><ShareCard id={id} fmt={fmt} name={charName} identity={meta.identity} mesh={meta.mesh} /></div>
+          <div className="share-row">
+            <button className="sbtn sbtn--wa" onClick={waShare}>whatsapp</button>
+            <button className="sbtn" onClick={copyLink}>copy link</button>
+          </div>
+        </div>
+
+        <div className="r-cta"><div className="r-cta__in">
+          <h3>now find the people who'll be that for you</h3>
+          <p>this is who you are to the people you love. unboring puts you in a small group of women you'll actually click with. say yes and show up.</p>
+          <a className="btn" href="/sign-up">join unboring</a>
+        </div></div>
+        <div className="r-retake"><button onClick={() => { window.location.href = "/friendship-quiz"; }}>take the quiz again</button></div>
+      </div>
+      {toast && <div className="toast show">{toast}</div>}
+    </div>
+  );
+}
+
+const baseCSS = `
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Hanken+Grotesque:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+.ur{--paper:#F4F2FB;--paper-2:#ECE9F7;--cloud:#FFFFFF;--ink:#17141F;--ink-soft:#615C70;--ink-faint:#A39EB2;--line:#E5E0F0;--violet:#8B6CF6;--violet-tint:#E4DCFB;--violet-ink:#4A2C9E;--grad-cta:linear-gradient(120deg,#8B6CF6 0%,#EC5E92 100%);--glow-cta:0 12px 32px rgba(139,108,246,.38);--shadow-sm:0 2px 8px rgba(23,20,31,.06);--shadow-md:0 8px 24px rgba(23,20,31,.09);--shadow-xl:0 28px 70px rgba(23,20,31,.15);--radius-lg:22px;--radius-2xl:44px;--radius-pill:999px;--font-display:'Baloo 2',sans-serif;--font-body:'Hanken Grotesque',sans-serif;--font-mono:'DM Mono',monospace;--c-pop:#8B6CF6;--c-tint:#E4DCFB;--c-ink:#4A2C9E;font-family:var(--font-body);color:var(--ink);background:var(--paper);}
+.ur *{margin:0;padding:0;box-sizing:border-box;}
+.ur .result{width:100%;max-width:760px;margin:0 auto;padding:clamp(28px,5vw,56px) clamp(20px,5vw,32px) clamp(48px,8vw,90px);}
+.ur .r-hero{text-align:center;}
+.ur .r-hero .badge{font-family:var(--font-mono);font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);}
+.ur .r-hero .cblob{margin:clamp(18px,4vw,30px) auto clamp(14px,3vw,22px);}
+.ur .r-name{font-family:var(--font-display);font-weight:800;font-size:clamp(38px,7vw,68px);letter-spacing:-.02em;line-height:.98;}
+.ur .r-identity{font-size:clamp(18px,2.6vw,24px);color:var(--ink-soft);margin-top:14px;}
+.ur .r-mesh{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:14px;color:var(--c-ink);background:var(--c-tint);border-radius:var(--radius-pill);padding:10px 18px;margin-top:22px;}
+.ur .r-divider{height:1px;background:var(--line);margin:clamp(36px,6vw,56px) 0;}
+.ur .report h3{font-family:var(--font-display);font-weight:700;font-size:clamp(22px,3vw,28px);letter-spacing:-.01em;margin-bottom:12px;display:flex;align-items:baseline;gap:12px;}
+.ur .report h3 .n{font-family:var(--font-mono);font-size:14px;color:var(--c-pop);font-weight:500;}
+.ur .report .sec{margin-bottom:clamp(28px,4vw,40px);}
+.ur .report p{font-size:17.5px;line-height:1.68;color:var(--ink);}
+.ur .r-typeline{background:var(--c-tint);border-radius:var(--radius-lg);padding:clamp(22px,3vw,30px);margin-top:8px;}
+.ur .r-typeline .lab{font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--c-ink);margin-bottom:10px;}
+.ur .r-typeline p{font-size:17px;line-height:1.6;color:var(--ink);}
+.ur .share-block{margin-top:clamp(40px,6vw,64px);text-align:center;}
+.ur .share-block h3{font-family:var(--font-display);font-weight:800;font-size:clamp(26px,4vw,38px);letter-spacing:-.015em;}
+.ur .share-block .sub{color:var(--ink-soft);margin-top:10px;font-size:16px;}
+.ur .share-toggle{display:inline-flex;gap:4px;background:var(--paper-2);padding:4px;border-radius:99px;margin-top:22px;}
+.ur .share-toggle button{font-family:var(--font-mono);font-size:12px;letter-spacing:.04em;border:none;background:none;color:var(--ink-soft);padding:8px 16px;border-radius:99px;cursor:pointer;}
+.ur .share-toggle button.on{background:var(--cloud);color:var(--ink);box-shadow:var(--shadow-sm);}
+.ur .share-card-wrap{display:flex;justify-content:center;margin-top:clamp(26px,4vw,38px);}
+.ur .share-card-wrap .scard-frame{border-radius:24px;overflow:hidden;box-shadow:var(--shadow-xl);}
+.ur .share-row{display:flex;justify-content:center;gap:12px;margin-top:clamp(22px,4vw,30px);flex-wrap:wrap;}
+.ur .sbtn{font-family:var(--font-body);font-weight:600;font-size:15px;border-radius:var(--radius-pill);padding:14px 24px;border:1.5px solid var(--line);background:var(--cloud);color:var(--ink);cursor:pointer;transition:transform .2s,box-shadow .2s;}
+.ur .sbtn:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);border-color:transparent;}
+.ur .sbtn--wa{background:#25D366;color:#fff;border-color:transparent;}
+.ur .r-cta{margin-top:clamp(44px,7vw,72px);background:linear-gradient(150deg,#2A2140,#5B3FC4);border-radius:var(--radius-2xl);padding:clamp(34px,5vw,56px);text-align:center;color:#fff;position:relative;overflow:hidden;}
+.ur .r-cta::after{content:"";position:absolute;inset:0;background:radial-gradient(50% 70% at 82% 110%,rgba(237,108,168,.34),transparent 70%);pointer-events:none;}
+.ur .r-cta__in{position:relative;}
+.ur .r-cta h3{font-family:var(--font-display);font-weight:800;font-size:clamp(26px,4vw,40px);letter-spacing:-.018em;line-height:1.04;}
+.ur .r-cta p{color:rgba(255,255,255,.82);font-size:17px;line-height:1.55;margin:16px auto 0;max-width:42ch;}
+.ur .r-cta .btn{margin-top:28px;}
+.ur .btn{font-family:var(--font-body);font-weight:700;font-size:18px;border:none;cursor:pointer;border-radius:var(--radius-pill);padding:17px 34px;display:inline-flex;text-decoration:none;background:var(--grad-cta);color:#fff;box-shadow:var(--glow-cta);}
+.ur .r-retake{text-align:center;margin-top:28px;}
+.ur .r-retake button{font-family:var(--font-mono);font-size:13px;color:var(--ink-soft);background:none;border:none;cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
+.ur .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:14px;padding:13px 22px;border-radius:99px;box-shadow:var(--shadow-xl);z-index:200;}
+/* share card */
+.ur .scard-frame{--sc:1;width:calc(var(--w) * var(--sc));height:calc(var(--h) * var(--sc));flex:0 0 auto;}
+.ur .scard{--c-pop:#8B6CF6;--c-tint:#E4DCFB;--c-ink:#4A2C9E;position:relative;box-sizing:border-box;font-family:var(--font-body);color:var(--ink);display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;transform:scale(var(--sc));transform-origin:top left;background:radial-gradient(115% 80% at 50% 12%,var(--c-tint),#FBFAFE 64%);}
+.ur .scard::before{content:"";position:absolute;left:-10%;right:-10%;bottom:-22%;height:48%;background:radial-gradient(60% 100% at 50% 100%,color-mix(in oklab,var(--c-pop) 22%,transparent),transparent 72%);pointer-events:none;}
+.ur .scard--square{--w:1080px;--h:1080px;width:1080px;height:1080px;padding:88px 84px;}
+.ur .scard--tall{--w:1080px;--h:1920px;width:1080px;height:1920px;padding:150px 96px 130px;}
+.ur .scard--safe-place{--c-pop:#4F9FE8;--c-tint:#D2E6FA;--c-ink:#1E5C97;} .ur .scard--truth-teller{--c-pop:#6E7BF2;--c-tint:#DCE0FB;--c-ink:#2E37A2;} .ur .scard--ride-or-die{--c-pop:#8B6CF6;--c-tint:#E4DCFB;--c-ink:#4A2C9E;} .ur .scard--hype-woman{--c-pop:#C264D8;--c-tint:#F0D9F7;--c-ink:#762B88;} .ur .scard--live-wire{--c-pop:#ED6CA8;--c-tint:#FBDDEC;--c-ink:#97265F;}
+.ur .scard__top{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.12em;color:var(--c-ink);text-align:center;opacity:.85;}
+.ur .scard--square .scard__top{font-size:27px;} .ur .scard--tall .scard__top{font-size:30px;}
+.ur .scard__body{display:flex;flex-direction:column;align-items:center;text-align:center;flex:1 1 auto;justify-content:center;}
+.ur .scard__body .cblob{margin-bottom:8px;}
+.ur .scard__name{font-family:var(--font-display);font-weight:800;letter-spacing:-.015em;line-height:.98;color:var(--ink);margin-top:40px;}
+.ur .scard--square .scard__name{font-size:104px;} .ur .scard--tall .scard__name{font-size:124px;}
+.ur .scard__identity{font-weight:500;color:var(--ink-soft);line-height:1.3;max-width:18ch;margin-top:26px;}
+.ur .scard--square .scard__identity{font-size:42px;} .ur .scard--tall .scard__identity{font-size:50px;}
+.ur .scard__mesh{font-family:var(--font-mono);color:var(--c-ink);background:color-mix(in oklab,var(--c-tint) 78%,#fff);border-radius:999px;margin-top:40px;}
+.ur .scard--square .scard__mesh{font-size:26px;padding:16px 30px;} .ur .scard--tall .scard__mesh{font-size:30px;padding:20px 36px;}
+.ur .scard__foot{display:flex;align-items:center;justify-content:space-between;}
+.ur .scard__logo{display:flex;align-items:center;gap:18px;}
+.ur .scard__logo span{font-family:var(--font-display);font-weight:800;color:var(--ink);letter-spacing:-.02em;}
+.ur .scard--square .scard__logo span{font-size:46px;} .ur .scard--tall .scard__logo span{font-size:52px;}
+.ur .scard__url{font-family:var(--font-mono);color:var(--ink-faint);}
+.ur .scard--square .scard__url{font-size:26px;} .ur .scard--tall .scard__url{font-size:30px;}
+.ur .scard__logo .ic-dot{color:var(--violet);}
+/* blobs */
+.ur .cblob{--pop:#8B6CF6;--tint:#E4DCFB;--ink:#4A2C9E;position:relative;width:var(--size,120px);height:var(--size,120px);font-size:var(--size,120px);flex:0 0 auto;border-radius:47% 53% 44% 56%/58% 42% 58% 42%;background:radial-gradient(circle at 34% 27%,color-mix(in oklab,var(--tint) 70%,#fff),var(--pop) 96%);box-shadow:inset 0 .04em .09em rgba(255,255,255,.55),0 .06em .16em rgba(23,20,31,.12);isolation:isolate;}
+.ur .cblob::after{content:"";position:absolute;top:11%;left:14%;width:40%;height:32%;border-radius:50%;background:radial-gradient(circle at 40% 40%,rgba(255,255,255,.6),transparent 70%);}
+.ur .cblob--safe-place{--pop:#4F9FE8;--tint:#D2E6FA;--ink:#1E5C97;} .ur .cblob--truth-teller{--pop:#6E7BF2;--tint:#DCE0FB;--ink:#2E37A2;} .ur .cblob--ride-or-die{--pop:#8B6CF6;--tint:#E4DCFB;--ink:#4A2C9E;} .ur .cblob--hype-woman{--pop:#C264D8;--tint:#F0D9F7;--ink:#762B88;} .ur .cblob--live-wire{--pop:#ED6CA8;--tint:#FBDDEC;--ink:#97265F;} .ur .cblob--brand{--pop:#C9B6F5;--tint:#FBD9EC;background:radial-gradient(circle at 36% 30%,#FBD9EC,#E0C3FC 48%,#CBDDFF 82%);}
+.ur .cb-eye{position:absolute;top:40%;width:.088em;height:.13em;border-radius:50%;background:#17141F;z-index:2;} .ur .cb-eye.l{left:31%;} .ur .cb-eye.r{right:31%;}
+.ur .cb-eye--calm{height:.052em;border-radius:.2em .2em 0 0;background:transparent;border-top:.036em solid #17141F;top:43%;}
+.ur .cb-mouth{position:absolute;left:50%;transform:translateX(-50%);z-index:2;} .ur .cb-mouth--grin{top:56%;width:.2em;height:.1em;background:#17141F;border-radius:0 0 1em 1em;} .ur .cb-mouth--wide{top:55%;width:.26em;height:.15em;background:#17141F;border-radius:.04em .04em 1em 1em;} .ur .cb-mouth--soft{top:57%;width:.2em;height:.1em;border-bottom:.034em solid #17141F;border-radius:0 0 1em 1em;} .ur .cb-mouth--level{top:60%;width:.17em;height:.07em;border-bottom:.034em solid #17141F;border-radius:0 0 .7em .7em;}
+.ur .cb-brow{position:absolute;top:33%;right:28%;width:.12em;height:.03em;background:#17141F;border-radius:1em;transform:rotate(-11deg);z-index:2;}
+.ur .cb-blush{position:absolute;top:51%;width:.09em;height:.055em;border-radius:50%;z-index:1;} .ur .cb-blush.l{left:18%;background:color-mix(in oklab,var(--ink) 16%,transparent);} .ur .cb-blush.r{right:18%;background:color-mix(in oklab,var(--ink) 16%,transparent);}
+.ur .cb-arm{position:absolute;width:.2em;height:.085em;background:var(--pop);border-radius:1em;z-index:0;} .ur .cb-arm--hug-l{left:12%;bottom:9%;transform:rotate(28deg);transform-origin:right center;} .ur .cb-arm--hug-r{right:12%;bottom:9%;transform:rotate(-28deg);transform-origin:left center;} .ur .cb-arm--up-l{left:-4%;top:26%;transform:rotate(34deg);transform-origin:right center;} .ur .cb-arm--up-r{right:-4%;top:26%;transform:rotate(-34deg);transform-origin:left center;} .ur .cb-arm--go{right:-7%;top:47%;transform:rotate(-6deg);transform-origin:left center;width:.24em;}
+.ur .cb-spark{position:absolute;width:.12em;height:.12em;background:var(--pop);clip-path:polygon(50% 0,60% 40%,100% 50%,60% 60%,50% 100%,40% 60%,0 50%,40% 40%);z-index:3;} .ur .cb-spark.s1{top:-3%;right:4%;} .ur .cb-spark.s2{top:16%;right:-6%;width:.08em;height:.08em;} .ur .cb-spark.s3{bottom:4%;left:-3%;width:.09em;height:.09em;}
+.ur .cb-bolt{position:absolute;top:-6%;right:2%;width:.17em;height:.24em;background:#FFC93C;clip-path:polygon(58% 0,12% 56%,46% 56%,30% 100%,92% 40%,54% 40%);z-index:3;}
+.ur .cb-zip{position:absolute;height:.035em;background:color-mix(in oklab,var(--pop) 75%,#fff);border-radius:1em;z-index:0;} .ur .cb-zip.a{width:.18em;left:-22%;top:38%;} .ur .cb-zip.b{width:.12em;left:-18%;top:52%;} .ur .cb-zip.c{width:.08em;left:-13%;top:64%;}
+.ur .cb-heart{position:absolute;top:-4%;right:4%;width:.18em;height:.18em;z-index:3;} .ur .cb-heart::before,.ur .cb-heart::after{content:"";position:absolute;top:0;left:.05em;width:.09em;height:.145em;border-radius:.09em .09em 0 0;background:var(--pop);transform:rotate(-45deg);transform-origin:0 100%;} .ur .cb-heart::after{left:0;transform:rotate(45deg);transform-origin:100% 100%;}
+.ur .cblob--lean{transform:rotate(-7deg);}
+`;
