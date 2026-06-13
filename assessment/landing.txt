@@ -1,0 +1,305 @@
+// unboring — assessment landing ("what kind of friend are you?")
+// Implemented from the Claude Design handoff (assessment/Assessment Landing.html).
+// Lead-magnet landing that launches the quiz. Styles scoped under .ulp.
+// Set QUIZ_URL to wherever the quiz block lives in your Softr app.
+
+const QUIZ_URL = "/quiz";
+const SIGNUP_URL = "/sign-up";
+
+const CHARACTERS = [
+  { id: "safe-place",   name: "the safe place",   tease: "the one people fall apart in front of" },
+  { id: "truth-teller", name: "the truth-teller", tease: "the one who keeps it real" },
+  { id: "ride-or-die",  name: "the ride-or-die",  tease: "the one who shows up" },
+  { id: "hype-woman",   name: "the hype woman",   tease: "the one who makes everyone feel unstoppable" },
+  { id: "live-wire",    name: "the live wire",    tease: "the one who gets everyone out of the house" },
+];
+
+// the five CSS-only blob emblems (Bev acting out each trait), per the design
+function Blob({ id, size }) {
+  const lean = (id === "ride-or-die" || id === "live-wire") ? " cblob--lean" : "";
+  const inner = {
+    "safe-place": (<><span className="cb-arm cb-arm--hug-l" /><span className="cb-arm cb-arm--hug-r" /><span className="cb-eye l cb-eye--calm" /><span className="cb-eye r cb-eye--calm" /><span className="cb-mouth cb-mouth--soft" /></>),
+    "truth-teller": (<><span className="cb-eye l" /><span className="cb-eye r" /><span className="cb-brow" /><span className="cb-mouth cb-mouth--level" /></>),
+    "ride-or-die": (<><span className="cb-zip a" /><span className="cb-zip b" /><span className="cb-zip c" /><span className="cb-arm cb-arm--go" /><span className="cb-eye l" /><span className="cb-eye r" /><span className="cb-mouth cb-mouth--grin" /><span className="cb-heart" /></>),
+    "hype-woman": (<><span className="cb-arm cb-arm--up-l" /><span className="cb-arm cb-arm--up-r" /><span className="cb-eye l" /><span className="cb-eye r" /><span className="cb-blush l" /><span className="cb-blush r" /><span className="cb-mouth cb-mouth--wide" /><span className="cb-spark s1" /><span className="cb-spark s2" /><span className="cb-spark s3" /></>),
+    "live-wire": (<><span className="cb-zip a" /><span className="cb-zip b" /><span className="cb-zip c" /><span className="cb-eye l" /><span className="cb-eye r" /><span className="cb-blush l" /><span className="cb-blush r" /><span className="cb-mouth cb-mouth--wide" /><span className="cb-bolt" /></>),
+  }[id];
+  return <div className={"cblob cblob--" + id + lean} style={{ "--size": size + "px" }}>{inner}</div>;
+}
+
+function BrandMark({ size }) {
+  return (
+    <div className="cblob cblob--brand" style={{ "--size": size + "px" }}>
+      <span className="cb-eye l" /><span className="cb-eye r" /><span className="cb-mouth cb-mouth--grin" />
+    </div>
+  );
+}
+const Word = () => (<span>unbor<span className="ic-dot">i</span>ng</span>);
+
+export default function Block() {
+  const go = (url) => (e) => { if (e) e.preventDefault(); window.location.href = url; };
+
+  return (
+    <div className="ulp">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Hanken+Grotesque:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+        .ulp{
+          --paper:#F4F2FB; --paper-2:#ECE9F7; --paper-3:#E7EFFB; --cloud:#FFFFFF;
+          --ink:#17141F; --ink-soft:#615C70; --ink-faint:#A39EB2; --line:#E5E0F0; --line-strong:#D6CFE6;
+          --violet:#8B6CF6; --violet-tint:#E4DCFB; --violet-ink:#4A2C9E;
+          --rose-tint:#FBDDEC; --rose-ink:#97265F; --ocean-tint:#D2E6FA; --ocean-ink:#1E5C97;
+          --grad-cta:linear-gradient(120deg,#8B6CF6 0%,#EC5E92 100%);
+          --grad-hero:linear-gradient(135deg,#DCE4FF,#ECDDFB 46%,#FBD9EC);
+          --grad-dream:radial-gradient(120% 120% at 15% 0%,#E2DBFB,#F4F2FB 55%,#FBE2EF);
+          --radius-sm:8px; --radius-md:14px; --radius-lg:22px; --radius-xl:32px; --radius-2xl:44px; --radius-pill:999px;
+          --shadow-sm:0 2px 8px rgba(23,20,31,.06); --shadow-md:0 8px 24px rgba(23,20,31,.09);
+          --shadow-lg:0 18px 48px rgba(23,20,31,.12); --shadow-xl:0 28px 70px rgba(23,20,31,.15);
+          --glow-cta:0 12px 32px rgba(139,108,246,.38); --glow-violet:0 10px 30px rgba(157,107,224,.32);
+          --font-display:'Baloo 2',sans-serif; --font-body:'Hanken Grotesque',sans-serif; --font-mono:'DM Mono',monospace;
+          --dur:240ms; --dur-fast:140ms; --dur-slow:420ms;
+          --ease-out:cubic-bezier(.22,1,.36,1); --ease-spring:cubic-bezier(.34,1.56,.64,1);
+          background:var(--paper); color:var(--ink); font-family:var(--font-body); -webkit-font-smoothing:antialiased; overflow-x:clip;
+        }
+        .ulp *{margin:0;padding:0;box-sizing:border-box;}
+        .ulp .wrap{width:100%;max-width:1120px;margin:0 auto;padding-inline:clamp(20px,5vw,48px);}
+        .ulp .section{padding-block:clamp(64px,9vw,128px);}
+        .ulp a{color:inherit;text-decoration:none;}
+        .ulp .center{text-align:center;} .ulp .center .sec-intro{margin-inline:auto;}
+
+        /* buttons */
+        .ulp .btn{font-family:var(--font-body);font-weight:700;font-size:17px;border:none;cursor:pointer;border-radius:var(--radius-pill);padding:16px 30px;display:inline-flex;align-items:center;gap:10px;transition:transform var(--dur) var(--ease-spring),box-shadow var(--dur) var(--ease-out);line-height:1;}
+        .ulp .btn--cta{background:var(--grad-cta);color:#fff;box-shadow:var(--glow-cta);}
+        .ulp .btn--cta:hover{transform:translateY(-2px);box-shadow:0 18px 44px rgba(139,108,246,.46);}
+        .ulp .btn--cta:active{transform:scale(.97);}
+        .ulp .btn--big{font-size:19px;padding:20px 38px;}
+
+        /* nav */
+        .ulp .nav{position:sticky;top:0;z-index:40;backdrop-filter:blur(12px);background:rgba(244,242,251,.8);border-bottom:1px solid transparent;}
+        .ulp .nav__in{display:flex;align-items:center;justify-content:space-between;padding-block:14px;}
+        .ulp .brand{display:flex;align-items:center;gap:12px;font-family:var(--font-display);font-weight:800;font-size:26px;letter-spacing:-.02em;}
+        .ulp .brand .ic-dot{color:var(--violet);}
+        .ulp .nav .btn{padding:12px 22px;font-size:15px;}
+
+        /* hero */
+        .ulp .hero{position:relative;text-align:center;padding-top:clamp(40px,7vw,80px);padding-bottom:clamp(56px,8vw,110px);background:var(--grad-hero);overflow:hidden;}
+        .ulp .hero__glow{position:absolute;inset:0;pointer-events:none;background:radial-gradient(40% 36% at 18% 12%,rgba(237,108,168,.16),transparent 70%),radial-gradient(42% 40% at 84% 16%,rgba(79,159,232,.15),transparent 72%);}
+        .ulp .hero__in{position:relative;max-width:860px;margin:0 auto;}
+        .ulp .hero__kicker{color:var(--violet-ink);margin-bottom:22px;display:inline-flex;align-items:center;gap:9px;background:#EEE7FB;padding:9px 16px;border-radius:var(--radius-pill);font-family:var(--font-mono);font-size:13px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;}
+        .ulp .hero h1{font-family:var(--font-display);font-weight:800;font-size:clamp(44px,8.2vw,92px);line-height:.98;letter-spacing:-.02em;}
+        .ulp .hero h1 em{font-style:normal;background:var(--grad-cta);-webkit-background-clip:text;background-clip:text;color:transparent;}
+        .ulp .hero__sub{font-size:clamp(18px,2.4vw,23px);color:var(--ink-soft);max-width:30ch;margin:24px auto 0;line-height:1.5;}
+        .ulp .hero__cta{margin-top:36px;display:flex;flex-direction:column;align-items:center;gap:14px;}
+        .ulp .hero__meta{font-family:var(--font-mono);font-size:13px;color:var(--ink-faint);letter-spacing:.02em;}
+        .ulp .tease{margin-top:clamp(40px,6vw,72px);display:flex;justify-content:center;align-items:flex-end;gap:clamp(6px,2vw,26px);flex-wrap:nowrap;}
+        .ulp .tease .t{display:flex;flex-direction:column;align-items:center;gap:12px;}
+        .ulp .tease .t .lbl{font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);letter-spacing:.03em;white-space:nowrap;opacity:0;transition:opacity var(--dur);}
+        .ulp .tease .t:hover .lbl{opacity:1;}
+        .ulp .tease .cblob{transition:transform var(--dur) var(--ease-spring);}
+        .ulp .tease .t:hover .cblob{transform:translateY(-8px) scale(1.05);}
+        .ulp .tease .t:nth-child(odd){transform:translateY(10px);}
+        .ulp .tease .t:nth-child(2),.ulp .tease .t:nth-child(4){transform:translateY(-6px);}
+
+        /* section heads */
+        .ulp .kicker-c{font-family:var(--font-mono);font-size:13px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--violet);}
+        .ulp .sec-title{font-family:var(--font-display);font-weight:700;font-size:clamp(30px,4.4vw,50px);line-height:1.04;letter-spacing:-.015em;margin-top:14px;}
+        .ulp .sec-intro{color:var(--ink-soft);font-size:clamp(17px,2vw,19px);max-width:56ch;margin-top:16px;line-height:1.55;}
+
+        /* discover */
+        .ulp .discover{background:var(--paper);}
+        .ulp .disc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(16px,2.4vw,28px);margin-top:clamp(36px,5vw,60px);text-align:left;}
+        .ulp .disc-card{background:var(--cloud);border-radius:var(--radius-xl);padding:clamp(26px,3vw,38px);box-shadow:var(--shadow-sm);}
+        .ulp .disc-card .ico{width:58px;height:58px;border-radius:var(--radius-md);display:grid;place-items:center;margin-bottom:22px;}
+        .ulp .disc-card .ico svg{width:28px;height:28px;}
+        .ulp .disc-card h3{font-family:var(--font-display);font-weight:700;font-size:23px;letter-spacing:-.01em;}
+        .ulp .disc-card p{color:var(--ink-soft);margin-top:10px;font-size:16px;line-height:1.55;}
+        @media(max-width:760px){.ulp .disc-grid{grid-template-columns:1fr;}}
+
+        /* meet the characters */
+        .ulp .meet{background:var(--paper-2);}
+        .ulp .meet-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:clamp(12px,1.6vw,20px);margin-top:clamp(36px,5vw,56px);}
+        .ulp .mc{background:var(--cloud);border-radius:var(--radius-lg);padding:30px 18px 26px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;transition:transform var(--dur) var(--ease-out),box-shadow var(--dur);}
+        .ulp .mc:hover{transform:translateY(-4px);box-shadow:var(--shadow-md);}
+        .ulp .mc .stage{height:108px;display:grid;place-items:center;}
+        .ulp .mc .nm{font-family:var(--font-display);font-weight:700;font-size:18px;letter-spacing:-.01em;line-height:1.1;}
+        .ulp .mc .ts{font-size:13px;color:var(--ink-soft);line-height:1.4;}
+        @media(max-width:880px){.ulp .meet-grid{grid-template-columns:repeat(2,1fr);}}
+
+        /* how it works */
+        .ulp .how{background:var(--paper);}
+        .ulp .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(18px,2.6vw,34px);margin-top:clamp(36px,5vw,60px);text-align:left;}
+        .ulp .step .num{font-family:var(--font-mono);font-size:13px;color:var(--violet);letter-spacing:.08em;}
+        .ulp .step h3{font-family:var(--font-display);font-weight:700;font-size:24px;margin-top:12px;letter-spacing:-.01em;}
+        .ulp .step p{color:var(--ink-soft);margin-top:10px;line-height:1.55;font-size:16px;}
+        .ulp .step::before{content:"";display:block;height:4px;width:46px;border-radius:99px;background:var(--grad-cta);margin-bottom:22px;}
+        @media(max-width:760px){.ulp .steps{grid-template-columns:1fr;gap:28px;}}
+
+        /* quiz invite */
+        .ulp .invite{background:var(--grad-dream);text-align:center;}
+        .ulp .invite .panel{background:var(--cloud);border-radius:var(--radius-2xl);padding:clamp(40px,6vw,80px) clamp(24px,5vw,64px);box-shadow:var(--shadow-lg);position:relative;overflow:hidden;}
+        .ulp .invite h2{font-family:var(--font-display);font-weight:800;font-size:clamp(30px,4.6vw,54px);letter-spacing:-.02em;line-height:1.02;}
+        .ulp .invite p{color:var(--ink-soft);font-size:18px;margin-top:16px;}
+
+        /* find your people */
+        .ulp .people{background:linear-gradient(150deg,#2A2140 0%,#3A2C6B 52%,#5B3FC4 100%);color:#fff;text-align:center;position:relative;overflow:hidden;}
+        .ulp .people::after{content:"";position:absolute;inset:0;background:radial-gradient(50% 60% at 80% 100%,rgba(237,108,168,.30),transparent 70%),radial-gradient(46% 50% at 12% 0%,rgba(79,159,232,.26),transparent 72%);pointer-events:none;}
+        .ulp .people__in{position:relative;max-width:720px;margin:0 auto;}
+        .ulp .people .kicker-c{color:#C7B7FF;}
+        .ulp .people h2{font-family:var(--font-display);font-weight:800;font-size:clamp(32px,5vw,60px);letter-spacing:-.02em;line-height:1.02;margin-top:14px;}
+        .ulp .people p{color:rgba(255,255,255,.82);font-size:clamp(17px,2.1vw,20px);line-height:1.55;margin:20px auto 0;max-width:48ch;}
+        .ulp .people .btn{margin-top:34px;}
+
+        /* footer */
+        .ulp .foot{background:var(--ink);color:rgba(255,255,255,.6);}
+        .ulp .foot__in{display:flex;align-items:center;justify-content:space-between;gap:20px;padding-block:30px;flex-wrap:wrap;}
+        .ulp .foot .brand{color:#fff;font-size:22px;}
+        .ulp .foot a{font-family:var(--font-mono);font-size:12.5px;color:rgba(255,255,255,.55);}
+        .ulp .foot a:hover{color:#fff;}
+
+        /* ---- character blob emblems (CSS only) ---- */
+        .ulp .cblob{--pop:#8B6CF6;--tint:#E4DCFB;--ink:#4A2C9E;position:relative;width:var(--size,120px);height:var(--size,120px);font-size:var(--size,120px);flex:0 0 auto;border-radius:47% 53% 44% 56%/58% 42% 58% 42%;background:radial-gradient(circle at 34% 27%,color-mix(in oklab,var(--tint) 70%,#fff),var(--pop) 96%);box-shadow:inset 0 .04em .09em rgba(255,255,255,.55),0 .06em .16em rgba(23,20,31,.12);isolation:isolate;}
+        .ulp .cblob::after{content:"";position:absolute;top:11%;left:14%;width:40%;height:32%;border-radius:50%;background:radial-gradient(circle at 40% 40%,rgba(255,255,255,.6),transparent 70%);pointer-events:none;}
+        .ulp .cblob--safe-place{--pop:#4F9FE8;--tint:#D2E6FA;--ink:#1E5C97;}
+        .ulp .cblob--truth-teller{--pop:#6E7BF2;--tint:#DCE0FB;--ink:#2E37A2;}
+        .ulp .cblob--ride-or-die{--pop:#8B6CF6;--tint:#E4DCFB;--ink:#4A2C9E;}
+        .ulp .cblob--hype-woman{--pop:#C264D8;--tint:#F0D9F7;--ink:#762B88;}
+        .ulp .cblob--live-wire{--pop:#ED6CA8;--tint:#FBDDEC;--ink:#97265F;}
+        .ulp .cblob--brand{--pop:#C9B6F5;--tint:#FBD9EC;--ink:#4A2C9E;background:radial-gradient(circle at 36% 30%,#FBD9EC,#E0C3FC 48%,#CBDDFF 82%);}
+        .ulp .cb-eye{position:absolute;top:40%;width:.088em;height:.13em;border-radius:50%;background:#17141F;z-index:2;}
+        .ulp .cb-eye.l{left:31%;} .ulp .cb-eye.r{right:31%;}
+        .ulp .cb-eye--calm{height:.052em;border-radius:.2em .2em 0 0;background:transparent;border-top:.036em solid #17141F;top:43%;}
+        .ulp .cb-mouth{position:absolute;left:50%;transform:translateX(-50%);z-index:2;}
+        .ulp .cb-mouth--grin{top:56%;width:.2em;height:.1em;background:#17141F;border-radius:0 0 1em 1em;}
+        .ulp .cb-mouth--wide{top:55%;width:.26em;height:.15em;background:#17141F;border-radius:.04em .04em 1em 1em;}
+        .ulp .cb-mouth--soft{top:57%;width:.2em;height:.1em;border-bottom:.034em solid #17141F;border-radius:0 0 1em 1em;}
+        .ulp .cb-mouth--level{top:60%;width:.17em;height:.07em;border-bottom:.034em solid #17141F;border-radius:0 0 .7em .7em;}
+        .ulp .cb-brow{position:absolute;top:33%;right:28%;width:.12em;height:.03em;background:#17141F;border-radius:1em;transform:rotate(-11deg);z-index:2;}
+        .ulp .cb-blush{position:absolute;top:51%;width:.09em;height:.055em;border-radius:50%;z-index:1;}
+        .ulp .cb-blush.l{left:18%;background:color-mix(in oklab,var(--ink) 16%,transparent);}
+        .ulp .cb-blush.r{right:18%;background:color-mix(in oklab,var(--ink) 16%,transparent);}
+        .ulp .cb-arm{position:absolute;width:.2em;height:.085em;background:var(--pop);border-radius:1em;box-shadow:inset 0 .03em .05em rgba(255,255,255,.4),0 .02em .05em rgba(23,20,31,.12);z-index:0;}
+        .ulp .cb-arm--hug-l{left:12%;bottom:9%;transform:rotate(28deg);transform-origin:right center;}
+        .ulp .cb-arm--hug-r{right:12%;bottom:9%;transform:rotate(-28deg);transform-origin:left center;}
+        .ulp .cb-arm--up-l{left:-4%;top:26%;transform:rotate(34deg);transform-origin:right center;}
+        .ulp .cb-arm--up-r{right:-4%;top:26%;transform:rotate(-34deg);transform-origin:left center;}
+        .ulp .cb-arm--go{right:-7%;top:47%;transform:rotate(-6deg);transform-origin:left center;width:.24em;}
+        .ulp .cb-spark{position:absolute;width:.12em;height:.12em;background:var(--pop);clip-path:polygon(50% 0,60% 40%,100% 50%,60% 60%,50% 100%,40% 60%,0 50%,40% 40%);z-index:3;filter:drop-shadow(0 .01em .03em rgba(23,20,31,.18));}
+        .ulp .cb-spark.s1{top:-3%;right:4%;} .ulp .cb-spark.s2{top:16%;right:-6%;width:.08em;height:.08em;} .ulp .cb-spark.s3{bottom:4%;left:-3%;width:.09em;height:.09em;}
+        .ulp .cb-bolt{position:absolute;top:-6%;right:2%;width:.17em;height:.24em;background:#FFC93C;clip-path:polygon(58% 0,12% 56%,46% 56%,30% 100%,92% 40%,54% 40%);filter:drop-shadow(0 .02em .04em rgba(23,20,31,.25));z-index:3;}
+        .ulp .cb-zip{position:absolute;height:.035em;background:color-mix(in oklab,var(--pop) 75%,#fff);border-radius:1em;z-index:0;}
+        .ulp .cb-zip.a{width:.18em;left:-22%;top:38%;} .ulp .cb-zip.b{width:.12em;left:-18%;top:52%;} .ulp .cb-zip.c{width:.08em;left:-13%;top:64%;}
+        .ulp .cb-heart{position:absolute;top:-4%;right:4%;width:.18em;height:.18em;z-index:3;filter:drop-shadow(0 .02em .04em rgba(23,20,31,.2));}
+        .ulp .cb-heart::before,.ulp .cb-heart::after{content:"";position:absolute;top:0;left:.05em;width:.09em;height:.145em;border-radius:.09em .09em 0 0;background:var(--pop);transform:rotate(-45deg);transform-origin:0 100%;}
+        .ulp .cb-heart::after{left:0;transform:rotate(45deg);transform-origin:100% 100%;}
+        .ulp .cblob--lean{transform:rotate(-7deg);}
+        @media(max-width:600px){.ulp .tease{gap:4px;}}
+      `}</style>
+
+      {/* NAV */}
+      <nav className="nav"><div className="wrap nav__in">
+        <a className="brand" href="#ulp-top"><BrandMark size={38} /><Word /></a>
+        <button className="btn btn--cta" onClick={go(QUIZ_URL)}>start the quiz</button>
+      </div></nav>
+
+      {/* HERO */}
+      <header className="hero" id="ulp-top">
+        <div className="hero__glow" />
+        <div className="wrap hero__in">
+          <div className="hero__kicker">the two-minute friendship quiz</div>
+          <h1>what kind of <em>friend</em> are you?</h1>
+          <p className="hero__sub">take the quiz, find out what kind of friend you are, and who you click with.</p>
+          <div className="hero__cta">
+            <button className="btn btn--cta btn--big" onClick={go(QUIZ_URL)}>start the quiz</button>
+            <span className="hero__meta">free · no sign-up to start · everyone gets their result</span>
+          </div>
+          <div className="tease">
+            {CHARACTERS.map((c) => (
+              <div className="t" key={c.id}><Blob id={c.id} size={70} /><span className="lbl">{c.name}</span></div>
+            ))}
+          </div>
+        </div>
+      </header>
+
+      {/* WHAT YOU'LL DISCOVER */}
+      <section className="section discover"><div className="wrap center">
+        <div className="kicker-c">what you'll discover</div>
+        <h2 className="sec-title">three things, in two minutes</h2>
+        <div className="disc-grid">
+          <div className="disc-card">
+            <div className="ico" style={{ background: "var(--violet-tint)" }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--violet-ink)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17l-1.9-5.6L4.5 10l5.6-1.9z" /><path d="M19 14v3M20.5 15.5h-3M6 4v2.5M7.2 5.2H4.8" /></svg>
+            </div>
+            <h3>what kind of friend you are</h3>
+            <p>your character — the safe place, the truth-teller, the ride-or-die, the hype woman or the live wire. how you show up, named.</p>
+          </div>
+          <div className="disc-card">
+            <div className="ico" style={{ background: "var(--rose-tint)" }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--rose-ink)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="8" r="3.2" /><path d="M3.5 19a5.5 5.5 0 0 1 11 0" /><path d="M16 6.2a3.2 3.2 0 0 1 0 6.1M16.5 14.4a5.5 5.5 0 0 1 4 5.3" /></svg>
+            </div>
+            <h3>who you click with</h3>
+            <p>the characters you mesh with instantly, the one who balances you, and the friend who's worth the friction.</p>
+          </div>
+          <div className="disc-card">
+            <div className="ico" style={{ background: "var(--ocean-tint)" }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--ocean-ink)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20.3l-7.2-7a4.3 4.3 0 0 1 6.1-6.1l1.1 1.1 1.1-1.1a4.3 4.3 0 0 1 6.1 6.1z" /><path d="M9 12l2 2 2-2 2 2" /></svg>
+            </div>
+            <h3>how you show up when it matters</h3>
+            <p>a full, warm read on how you love your people — the kind of thing you'll want to send straight to your best friend.</p>
+          </div>
+        </div>
+      </div></section>
+
+      {/* MEET THE CHARACTERS */}
+      <section className="section meet"><div className="wrap center">
+        <div className="kicker-c">meet the characters</div>
+        <h2 className="sec-title">which one are you?</h2>
+        <p className="sec-intro">five friends, five ways of loving people. you're one of them — the quiz tells you which.</p>
+        <div className="meet-grid">
+          {CHARACTERS.map((c) => (
+            <div className="mc" key={c.id}>
+              <div className="stage"><Blob id={c.id} size={84} /></div>
+              <div className="nm">{c.name}</div>
+              <div className="ts">{c.tease}</div>
+            </div>
+          ))}
+        </div>
+      </div></section>
+
+      {/* HOW IT WORKS */}
+      <section className="section how"><div className="wrap center">
+        <div className="kicker-c">how it works</div>
+        <h2 className="sec-title">three steps</h2>
+        <div className="steps">
+          <div className="step"><div className="num">step 01</div><h3>answer honestly</h3><p>a handful of real questions about how you show up for the people you love. no right answers, just you.</p></div>
+          <div className="step"><div className="num">step 02</div><h3>get your character</h3><p>your friend character with a full, written read on how you love — plus the type you click with.</p></div>
+          <div className="step"><div className="num">step 03</div><h3>share &amp; find your people</h3><p>post your character, see who your friends are, then join a group of women you'll actually click with.</p></div>
+        </div>
+      </div></section>
+
+      {/* QUIZ INVITE */}
+      <section className="section invite"><div className="wrap">
+        <div className="panel">
+          <h2>so… which friend are you?</h2>
+          <p>two minutes. you'll know by the end.</p>
+          <div style={{ marginTop: 28 }}><button className="btn btn--cta btn--big" onClick={go(QUIZ_URL)}>start the quiz</button></div>
+        </div>
+      </div></section>
+
+      {/* FIND YOUR PEOPLE */}
+      <section className="section people"><div className="wrap people__in">
+        <div className="kicker-c">find your people</div>
+        <h2>now find the people who'll be that for you</h2>
+        <p>this is who you are to the people you love. now find the people who'll be that for you. unboring puts you in a small group of women you'll actually click with. say yes and show up.</p>
+        <a className="btn btn--cta btn--big" href={SIGNUP_URL} onClick={go(SIGNUP_URL)}>join unboring</a>
+      </div></section>
+
+      {/* FOOTER */}
+      <footer className="foot"><div className="wrap foot__in">
+        <div className="brand"><BrandMark size={30} /><Word /></div>
+        <div style={{ display: "flex", gap: 22, alignItems: "center" }}>
+          <a href={QUIZ_URL} onClick={go(QUIZ_URL)}>take the quiz &rarr;</a>
+          <a href="#ulp-top">back to top</a>
+        </div>
+      </div></footer>
+    </div>
+  );
+}
