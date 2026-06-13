@@ -52,34 +52,49 @@ export default function Block() {
     },
     initialValue: [
       {
-        question: "Do I need coding skills to use Softr?",
+        question: "is this for friends or dating?",
         answer:
-          "No, Softr is an AI assisted no-code app builder. Non-technical users can build web apps easily by chatting with AI co-builder or through our visual editor.",
+          "friends, always. unboring is a friendship platform, not a dating one. it's currently for women, & it's about meeting people you'd genuinely want in your life. what grows from there is yours.",
       },
       {
-        question: "What can I build with Softr?",
+        question: "will there be people my age?",
         answer:
-          "You can build client portals, internal tools, marketplaces, directories, community platforms, and more — all without code.",
+          "yes. everyone in your group is within a few years of your age & at a similar life stage, so you're meeting people you can actually relate to.",
       },
       {
-        question: "How does Softr connect to my data?",
+        question: "how does matching work?",
         answer:
-          "Softr connects directly to Softr Databases, Airtable, Google Sheets, Notion, and other data sources. Changes in your data are reflected in your app in real time.",
+          "when you join, you take a quick personality test. it places you in one of our five archetypes, & we use those to build balanced groups so every table has the right mix of personalities & the dynamic just works. at the end of each experience, we ask who you'd like to see again. if it's mutual, we set you up on your next experience together.",
       },
       {
-        question: "Is Softr suitable for building internal tools?",
+        question: "how many people am i meeting?",
         answer:
-          "Absolutely. Many teams use Softr to build internal dashboards, admin panels, and workflow tools connected to their existing data.",
+          "the first portion, usually an intimate shared meal, is with 5 to 7 others in your group. after that, groups from across the city come together for a bigger experience, anywhere from 20 to 100 members.",
       },
       {
-        question: "Can I control who sees what in my app?",
+        question: "when will my reservation be revealed?",
         answer:
-          "Yes, Softr supports role-based access control. You can create user groups and restrict pages or content based on user roles and permissions.",
+          "you'll receive your exact arrival time & location the day before your experience.",
       },
       {
-        question: "How do I get help if I'm stuck?",
+        question: "when do i find out about the second location?",
         answer:
-          "Softr offers 24/7 live support, and we have a community of experts ready to help!",
+          "about an hour into the first portion, we'll reveal where you're heading next. half the fun is not knowing until you're already in it.",
+      },
+      {
+        question: "what about dietary restrictions?",
+        answer:
+          "we ask about dietary needs during onboarding & do our best to accommodate them when we curate your night.",
+      },
+      {
+        question: "what does membership include?",
+        answer:
+          "we curate your entire night, from your reservation to your group to the experience that follows. food & drinks are down to you (unless stated otherwise).",
+      },
+      {
+        question: "how do i stay connected after?",
+        answer:
+          "every group gets a chat to keep things going, & the more you show up, host, & follow up with the people you've met, the more connection points & streaks you earn. it rewards the things that actually turn a night out into a friendship.",
       },
     ],
   });
