@@ -1,0 +1,111 @@
+// unboring — onboarding sign-up (vibe code block, writes to the users table)
+// Free member sign-up: name, email, phone, gender, date of birth, city.
+// City is written as a link to the cities table (by record id). group is set to Member.
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useRecordCreate, q } from "@/lib/datasource";
+import { toast } from "sonner";
+
+const fields = q.select({
+  name: "hNVl4",
+  email: "K1oH6",
+  phone: "hOgTl",
+  gender: "T2EBs",
+  dateOfBirth: "F7rF6",
+  city: "E7Of8",
+  group: "7MVR3",
+});
+
+const UBC = {
+  ink: "#17141F", inkSoft: "#615C70", violet: "#8B6CF6", line: "#D6CFE6",
+  gradCta: "linear-gradient(120deg, #8B6CF6 0%, #ED6CA8 100%)",
+  fd: "'Baloo 2', sans-serif", fb: "'Hanken Grotesque', sans-serif", fm: "'DM Mono', monospace",
+};
+const inputStyle = { backgroundColor: "#FFFFFF", borderColor: UBC.line, color: UBC.ink, fontFamily: UBC.fb, fontSize: "15px" };
+const selectStyle = { ...inputStyle, width: "100%", height: "44px", border: `1px solid ${UBC.line}`, borderRadius: "999px", padding: "0 16px", cursor: "pointer" };
+
+const GENDERS = ["woman", "non-binary", "prefer not to say"];
+// city name -> cities table record id (used to write the linked-record field)
+const CITY_IDS = {
+  london: "ALkpBLu9ewolTP", manchester: "phdsbSMaTnK9ie", birmingham: "1WcgtRbSPDf32j",
+  bristol: "4k4VcNC5wRxu4Q", liverpool: "joUCl1HesS8hQr", glasgow: "osaaL5leOjngGU",
+  leeds: "PHLMeKIcqyW5jK", edinburgh: "aiMsjQOdXN3qqm", newcastle: "WYI8yDtA63GrfL",
+  belfast: "BWfTP7nZWI1gVt", sheffield: "tClq9fjbVrp2uY", nottingham: "dRLGjw6MiRPHj0",
+  cardiff: "3vno2PfQoAHOaM", brighton: "e2pzJVCxn2WDqN", cambridge: "TCiEI2G97bezNf",
+};
+const CITIES = Object.keys(CITY_IDS);
+
+export default function Block() {
+  const [d, setD] = useState({ name: "", email: "", phone: "", gender: "", dob: "", city: "" });
+  const set = (k, v) => setD((p) => ({ ...p, [k]: v }));
+
+  const createRecord = useRecordCreate({
+    fields,
+    onSuccess: () => {
+      toast.success("welcome to unboring, you're in. keep an eye out for your first invite.");
+      setD({ name: "", email: "", phone: "", gender: "", dob: "", city: "" });
+    },
+    onError: (error) => toast.error(`something went wrong: ${error.message}`),
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!d.name.trim()) return toast.error("please add your name");
+    if (!d.email.trim()) return toast.error("please add your email");
+    if (!d.city) return toast.error("please pick your city");
+    createRecord.mutate({
+      name: d.name,
+      email: d.email,
+      phone: d.phone,
+      gender: d.gender || undefined,
+      dateOfBirth: d.dob ? new Date(d.dob).toISOString() : undefined,
+      city: [CITY_IDS[d.city]],
+      group: "Member",
+    });
+  };
+
+  const pending = createRecord.status === "pending";
+
+  return (
+    <div style={{ fontFamily: UBC.fb, color: UBC.ink, maxWidth: "440px", margin: "0 auto", padding: "24px" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Hanken+Grotesque:wght@400;500;700&family=DM+Mono:wght@500&display=swap');`}</style>
+
+      <div style={{ fontFamily: UBC.fm, fontSize: "12px", fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: UBC.violet, marginBottom: "8px" }}>
+        join unboring
+      </div>
+      <h2 style={{ fontFamily: UBC.fd, fontWeight: 800, fontSize: "34px", lineHeight: 1, letterSpacing: "-0.01em", textTransform: "uppercase", color: UBC.ink, margin: 0 }}>
+        let's get you in.
+      </h2>
+      <p style={{ fontSize: "15px", color: UBC.inkSoft, margin: "10px 0 0" }}>
+        free to join, no payment. we'll start sending you invites to experiences in your city.
+      </p>
+
+      <form onSubmit={handleSubmit} style={{ marginTop: "22px", display: "flex", flexDirection: "column", gap: "13px" }}>
+        <Input placeholder="full name" value={d.name} onChange={(e) => set("name", e.target.value)} className="rounded-full h-11" style={inputStyle} />
+        <Input type="email" placeholder="email" value={d.email} onChange={(e) => set("email", e.target.value)} className="rounded-full h-11" style={inputStyle} />
+        <Input type="tel" placeholder="phone" value={d.phone} onChange={(e) => set("phone", e.target.value)} className="rounded-full h-11" style={inputStyle} />
+
+        <select value={d.gender} onChange={(e) => set("gender", e.target.value)} style={selectStyle}>
+          <option value="" disabled>gender</option>
+          {GENDERS.map((g) => <option key={g} value={g}>{g}</option>)}
+        </select>
+
+        <div>
+          <label style={{ display: "block", fontFamily: UBC.fb, fontSize: "13px", color: UBC.inkSoft, margin: "0 0 5px 4px" }}>date of birth</label>
+          <Input type="date" value={d.dob} onChange={(e) => set("dob", e.target.value)} className="rounded-full h-11" style={inputStyle} />
+        </div>
+
+        <select value={d.city} onChange={(e) => set("city", e.target.value)} style={selectStyle}>
+          <option value="" disabled>your city</option>
+          {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+
+        <Button type="submit" disabled={pending} className="w-full rounded-full font-bold"
+          style={{ background: UBC.gradCta, color: "#FFFFFF", fontFamily: UBC.fb, fontSize: "16px", height: "50px", boxShadow: "0 10px 26px rgba(139,108,246,0.38)", border: "none", marginTop: "6px" }}>
+          {pending ? "creating your account..." : "join unboring"}
+        </Button>
+      </form>
+    </div>
+  );
+}
