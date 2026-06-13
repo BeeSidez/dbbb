@@ -1,0 +1,86 @@
+// unboring partners — block 3: why unboring (comparison) + why the crowd
+export default function Block() {
+  return (
+    <div className="ubp3">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Hanken+Grotesque:wght@400;500;700&family=DM+Mono:wght@500&display=swap');
+        .ubp3 {
+          --ink: #17141F; --ink-soft: #615C70; --rose: #ED6CA8; --violet: #8B6CF6; --line: #D6CFE6;
+          --fd: 'Baloo 2', sans-serif; --fb: 'Hanken Grotesque', sans-serif; --fm: 'DM Mono', monospace;
+          font-family: var(--fb); color: var(--ink);
+        }
+        .ubp3 *, .ubp3 *::before, .ubp3 *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        .ubp3 section { padding: 110px 28px; }
+        .ubp3 .inner { max-width: 1140px; margin: 0 auto; }
+        .ubp3 .kicker { font-family: var(--fm); font-size: 14px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--violet); margin-bottom: 22px; }
+        .ubp3 h2 { font-family: var(--fd); font-weight: 800; text-transform: uppercase; letter-spacing: -0.01em; line-height: 0.98; font-size: clamp(36px, 5vw, 60px); }
+        .ubp3 .sub { font-size: 19px; line-height: 1.55; color: var(--ink-soft); max-width: 560px; margin-top: 18px; }
+
+        .ubp3 .why { background: var(--ink); color: #fff; position: relative; overflow: hidden; }
+        .ubp3 .why::before { content: ""; position: absolute; top: -160px; right: 6%; width: 480px; height: 480px; border-radius: 50%;
+          background: radial-gradient(circle, rgba(139,108,246,0.32), transparent 65%); pointer-events: none; }
+        .ubp3 .why::after { content: ""; position: absolute; bottom: -200px; left: 4%; width: 520px; height: 520px; border-radius: 50%;
+          background: radial-gradient(circle, rgba(237,108,168,0.22), transparent 65%); pointer-events: none; }
+        .ubp3 .why .inner { position: relative; z-index: 2; }
+        .ubp3 .why .kicker { color: var(--rose); }
+        .ubp3 .why .sub { color: rgba(255,255,255,0.65); }
+        .ubp3 .compare { margin-top: 56px; border-radius: 26px; overflow: hidden; border: 1px solid rgba(255,255,255,0.12); }
+        .ubp3 .crow { display: grid; grid-template-columns: 200px 1fr 1fr; }
+        .ubp3 .crow > div { padding: 22px 26px; font-size: 15.5px; line-height: 1.5; border-top: 1px solid rgba(255,255,255,0.1); }
+        .ubp3 .crow.head > div { border-top: none; font-family: var(--fm); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; padding: 18px 26px; }
+        .ubp3 .crow .lbl { color: rgba(255,255,255,0.5); font-family: var(--fm); font-size: 13px; letter-spacing: 0.04em; }
+        .ubp3 .crow .them { color: rgba(255,255,255,0.55); background: rgba(255,255,255,0.03); }
+        .ubp3 .crow .us { background: rgba(139,108,246,0.14); color: #fff; }
+        .ubp3 .crow.head .them { color: rgba(255,255,255,0.45); }
+        .ubp3 .crow.head .us { color: #fff; background: rgba(139,108,246,0.28); }
+        .ubp3 .crow .us b { color: #FF9FC4; }
+
+        .ubp3 .crowd { background: linear-gradient(180deg, #FFFFFF 0%, #F4F2FB 100%); }
+        .ubp3 .crowd-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 56px; }
+        .ubp3 .crowd-card { background: #fff; border: 1.5px solid var(--line); border-radius: 24px; padding: 32px 28px; }
+        .ubp3 .crowd-card h3 { font-family: var(--fd); font-weight: 700; font-size: 23px; line-height: 1.12; margin-bottom: 10px; }
+        .ubp3 .crowd-card p { font-size: 16px; line-height: 1.55; color: var(--ink-soft); }
+
+        @media (max-width: 900px) {
+          .ubp3 section { padding: 80px 24px; }
+          .ubp3 .crowd-grid { grid-template-columns: 1fr; }
+          .ubp3 .crow { grid-template-columns: 1fr; }
+          .ubp3 .crow .lbl { padding-bottom: 4px; border-top: 1px solid rgba(255,255,255,0.18); }
+          .ubp3 .crow > div { border-top: none; padding: 14px 22px; }
+          .ubp3 .crow.head { display: none; }
+          .ubp3 .crow .them::before { content: "google & meta ads — "; font-family: var(--fm); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 4px; color: rgba(255,255,255,0.4); }
+          .ubp3 .crow .us::before { content: "unboring — "; font-family: var(--fm); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 4px; color: #FF9FC4; }
+        }
+      `}</style>
+
+      <section className="why" data-screen-label="why-unboring">
+        <div className="inner">
+          <div className="kicker">why unboring?</div>
+          <h2>pay for customers,<br />not impressions.</h2>
+          <p className="sub">google and meta charge you to put your venue in front of people who may never walk through the door. unboring only charges you for the guests who actually show up.</p>
+          <div className="compare">
+            <div className="crow head"><div className="lbl"></div><div className="them">google &amp; meta ads</div><div className="us">unboring</div></div>
+            <div className="crow"><div className="lbl">what you pay for</div><div className="them">impressions &amp; clicks, then you hope they convert</div><div className="us"><b>guests who walk in and spend</b> at your venue</div></div>
+            <div className="crow"><div className="lbl">cost</div><div className="them">&pound;400 to &pound;1,900 a month regardless of results</div><div className="us"><b>&pound;2 to &pound;4 per guest</b>, only for confirmed check-ins</div></div>
+            <div className="crow"><div className="lbl">attribution</div><div className="them">hard to track who actually showed up</div><div className="us">full guest list with <b>in-app check-in</b></div></div>
+            <div className="crow"><div className="lbl">attendance</div><div className="them">random, no control over when or if they come</div><div className="us"><b>guaranteed footfall</b> on a date you choose</div></div>
+            <div className="crow"><div className="lbl">feedback</div><div className="them">public reviews you can't control</div><div className="us"><b>private, actionable insight</b> from the majority of guests</div></div>
+          </div>
+        </div>
+      </section>
+
+      <section className="crowd" data-screen-label="why-the-crowd">
+        <div className="inner">
+          <div className="kicker">why the crowd</div>
+          <h2>the right room, every time.</h2>
+          <p className="sub">unboring groups are women, matched by personality, so they arrive ready to relax, stay, and spend. it makes for a warm, sociable room, the kind that fills quiet midweek covers and brings people back.</p>
+          <div className="crowd-grid">
+            <div className="crowd-card"><h3>a safe, lively atmosphere</h3><p>that's easy to host and good for your regulars too</p></div>
+            <div className="crowd-card"><h3>word of mouth that travels</h3><p>because friendship groups recommend the places they loved</p></div>
+            <div className="crowd-card"><h3>repeat visits</h3><p>since most members are out discovering their city and return on their own time</p></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
