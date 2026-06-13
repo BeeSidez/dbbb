@@ -11,6 +11,7 @@ const fields = q.select({
   description: "Cdwtd",
   email: "iQBvL",
   location: "i9mwZ",
+  enquiryType: "pH7Ce",
 });
 
 // ─── unboring tokens ────────────────────────────────────────────────
@@ -62,6 +63,7 @@ export default function Block() {
       email: formData.email,
       location: formData.location,
       description: formData.message,
+      enquiryType: "contact us",
     });
   };
 
