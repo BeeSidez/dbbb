@@ -5,7 +5,7 @@
 //
 // ── READ LAYER (the only Softr-specific glue; tweak here if the hook shape differs) ──
 import { useState } from "react";
-import { useRecord, useCurrentRecordId, q } from "@/lib/datasource";
+import { useRecord, q } from "@/lib/datasource";
 
 const fields = q.select({
   name: "QH7Pq", character: "eaNfW", starSign: "S3CyZ",
@@ -103,10 +103,8 @@ export default function Block() {
   const [fmt, setFmt] = useState("square");
   const [toast, setToast] = useState("");
 
-  const urlId = (typeof window !== "undefined") ? new URLSearchParams(window.location.search).get("id") : null;
-  const pageId = useCurrentRecordId ? useCurrentRecordId() : null;
-  const recordId = pageId || urlId;
-  const query = useRecord ? useRecord({ fields, recordId }) : null;
+  // Softr reads the current detail-page record from the connected datasource.
+  const query = useRecord({ select: fields });
   const record = (query && (query.record || query.data || query.row)) || query || null;
   const F = (record && (record.fields || record)) || {};
 
