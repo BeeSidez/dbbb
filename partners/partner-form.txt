@@ -1,6 +1,6 @@
-// unboring — partner application form (/partner-with-us)
+// unboring — partner application form (/partner-with-us) — multi-step slider
+// One section per step; slides between them; branches by partner category at step 3.
 // Writes to the Enquires table; Enquiry Type is stamped "partner with us".
-// Branches by partner category so each applicant only sees the relevant questions.
 // SELECT fields are written with EXACT option labels (must match the DB choices).
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -41,7 +41,7 @@ const UBC = {
 };
 const inputStyle = { backgroundColor: "#FFFFFF", borderColor: UBC.line, color: UBC.ink, fontFamily: UBC.fb, fontSize: "15px" };
 
-// option lists — these labels MUST match the Enquires table SELECT choices exactly
+// option lists — labels MUST match the Enquires table SELECT choices exactly
 const ROLES = ["owner", "manager", "events lead", "curator", "other"];
 const CITIES = ["london", "manchester", "birmingham", "bristol", "liverpool", "glasgow", "leeds", "edinburgh", "newcastle", "belfast", "sheffield", "nottingham", "cardiff", "brighton", "cambridge"];
 const CATEGORIES = [
@@ -53,15 +53,7 @@ const PRIVATE_AREA = ["yes", "no", "sometimes"];
 const SPEND = ["under £20", "£20 to £40", "£40 to £60", "£60+"];
 const FREQ = ["weekly", "monthly", "occasionally", "other"];
 const NIGHTS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
-
-function SectionTitle({ n, t }) {
-  return (
-    <div style={{ display: "flex", alignItems: "baseline", gap: "10px", marginTop: "4px" }}>
-      <span style={{ fontFamily: UBC.fd, fontWeight: 800, fontSize: "22px", color: UBC.violet }}>{n}</span>
-      <span style={{ fontFamily: UBC.fd, fontWeight: 700, fontSize: "18px", color: UBC.ink, textTransform: "uppercase", letterSpacing: "0.01em" }}>{t}</span>
-    </div>
-  );
-}
+const emailOk = (s) => /.+@.+\..+/.test((s || "").trim());
 
 function FieldLabel({ children, req }) {
   return (
@@ -70,7 +62,6 @@ function FieldLabel({ children, req }) {
     </label>
   );
 }
-
 function NativeSelect({ value, onChange, placeholder, options, allowBlank }) {
   return (
     <select value={value} onChange={onChange} className="w-full rounded-full h-11 px-4"
@@ -82,6 +73,8 @@ function NativeSelect({ value, onChange, placeholder, options, allowBlank }) {
 }
 
 export default function Block() {
+  const [step, setStep] = useState(0);
+  const [dir, setDir] = useState(1);
   const [d, setD] = useState({
     name: "", role: "", email: "", phone: "",
     city: "", partnerCategory: "",
@@ -103,234 +96,197 @@ export default function Block() {
   const isRestaurant = cat === "restaurant, bar or café";
   const isVenue = cat === "venue or space";
   const isCurator = cat === "experience curator";
+  const branchLabel = isCurator ? "about your experience" : isVenue ? "about your venue" : isRestaurant ? "about your restaurant or bar" : "about your space";
+  const STEP_LABELS = ["your details", "what you offer", branchLabel, "wrap up"];
 
   const createRecord = useRecordCreate({
     fields,
     onSuccess: () => {
       toast.success("thank you — we'll be in touch to set up a call!");
+      setStep(0);
+      setDir(1);
       setD({ name: "", role: "", email: "", phone: "", city: "", partnerCategory: "", businessName: "", address: "", website: "", socialMedia: "", capacity: "", privateArea: "", cuisineVibe: "", avgSpend: "", spaceType: "", typicalEvents: "", ticketPrice: "", eventFrequency: "", preferredNights: [], notes: "", howHeard: "" });
     },
     onError: (error) => toast.error(`error: ${error.message}`),
   });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!cat) {
-      toast.error("tell us what best describes you first");
-      return;
+  const validateStep = (s) => {
+    if (s === 0) {
+      if (!d.name.trim()) return "your full name";
+      if (!d.role) return "your role";
+      if (!emailOk(d.email)) return "a valid email";
+      if (!d.phone.trim()) return "your phone number";
+    } else if (s === 1) {
+      if (!d.city) return "the city you'd like to host in";
+      if (!d.partnerCategory) return "what best describes you";
+    } else if (s === 2) {
+      if (!d.businessName.trim()) return isCurator ? "your business or experience name" : "your venue name";
+      if (isCurator && !d.typicalEvents.trim()) return "a description of your typical events";
+      if (!d.address.trim()) return isCurator ? "where you run it" : "your address";
+      if (isVenue && !d.spaceType.trim()) return "what type of space it is";
+      if (!d.capacity) return isCurator ? "your typical group size" : "your capacity";
+      if (isCurator && !d.ticketPrice) return "your ticket price";
+      if ((isRestaurant || isVenue) && !d.privateArea) return "whether you have a private area";
     }
-    // shared fields (Parts 1, 2, 4) — always sent
+    return null;
+  };
+
+  const goNext = () => {
+    const miss = validateStep(step);
+    if (miss) { toast.error(`please add ${miss}`); return; }
+    setDir(1);
+    setStep((s) => Math.min(s + 1, 3));
+  };
+  const goBack = () => { setDir(-1); setStep((s) => Math.max(s - 1, 0)); };
+
+  const handleSubmit = () => {
+    for (const s of [0, 1, 2]) {
+      const miss = validateStep(s);
+      if (miss) { setDir(-1); setStep(s); toast.error(`please add ${miss}`); return; }
+    }
     const payload = {
       enquiryType: "partner with us",
-      name: d.name,
-      role: d.role,
-      email: d.email,
-      phone: d.phone,
-      city: d.city,
-      partnerCategory: d.partnerCategory,
-      businessName: d.businessName,
-      address: d.address,
-      website: d.website,
-      socialMedia: d.socialMedia,
+      name: d.name, role: d.role, email: d.email, phone: d.phone,
+      city: d.city, partnerCategory: d.partnerCategory,
+      businessName: d.businessName, address: d.address, website: d.website, socialMedia: d.socialMedia,
       capacity: d.capacity ? Number(d.capacity) : null,
-      preferredNights: d.preferredNights,
-      notes: d.notes,
-      howHeard: d.howHeard,
+      preferredNights: d.preferredNights, notes: d.notes, howHeard: d.howHeard,
     };
-    // branch-specific fields — only the relevant ones
-    if (isRestaurant) {
-      payload.privateArea = d.privateArea;
-      payload.cuisineVibe = d.cuisineVibe;
-      payload.avgSpend = d.avgSpend;
-    } else if (isVenue) {
-      payload.privateArea = d.privateArea;
-      payload.spaceType = d.spaceType;
-    } else if (isCurator) {
-      payload.typicalEvents = d.typicalEvents;
-      payload.ticketPrice = d.ticketPrice ? Number(d.ticketPrice) : null;
-      payload.eventFrequency = d.eventFrequency;
-    }
+    if (isRestaurant) { payload.privateArea = d.privateArea; payload.cuisineVibe = d.cuisineVibe; payload.avgSpend = d.avgSpend; }
+    else if (isVenue) { payload.privateArea = d.privateArea; payload.spaceType = d.spaceType; }
+    else if (isCurator) { payload.typicalEvents = d.typicalEvents; payload.ticketPrice = d.ticketPrice ? Number(d.ticketPrice) : null; payload.eventFrequency = d.eventFrequency; }
     createRecord.mutate(payload);
   };
 
+  const pending = createRecord.status === "pending";
+
   return (
     <div style={{ fontFamily: UBC.fb, color: UBC.ink, maxWidth: "560px", margin: "0 auto", padding: "24px" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Hanken+Grotesque:wght@400;500;700&family=DM+Mono:wght@500&display=swap');`}</style>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Hanken+Grotesque:wght@400;500;700&family=DM+Mono:wght@500&display=swap');
+        @keyframes ubpfSlide { from { opacity: 0; transform: translateX(var(--fromX, 48px)); } to { opacity: 1; transform: translateX(0); } }
+        .ubpf-slide { animation: ubpfSlide .34s cubic-bezier(.22,.61,.36,1); }
+      `}</style>
 
       <div style={{ fontFamily: UBC.fm, fontSize: "12px", fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: UBC.violet, marginBottom: "8px" }}>
         partner with us
       </div>
-      <h2 style={{ fontFamily: UBC.fd, fontWeight: 800, fontSize: "34px", lineHeight: 1, letterSpacing: "-0.01em", textTransform: "uppercase", color: UBC.ink, margin: 0 }}>
+      <h2 style={{ fontFamily: UBC.fd, fontWeight: 800, fontSize: "32px", lineHeight: 1, letterSpacing: "-0.01em", textTransform: "uppercase", color: UBC.ink, margin: 0 }}>
         tell us about your space
       </h2>
-      <p style={{ fontSize: "15px", color: UBC.inkSoft, margin: "10px 0 0" }}>
-        and we'll be in touch to set up a call.
-      </p>
 
-      <form onSubmit={handleSubmit} style={{ marginTop: "24px", display: "flex", flexDirection: "column", gap: "26px" }}>
+      {/* progress */}
+      <div style={{ display: "flex", gap: "6px", marginTop: "20px" }}>
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} style={{ flex: 1, height: "5px", borderRadius: "999px", background: i <= step ? UBC.gradCta : UBC.line, transition: "background .3s" }} />
+        ))}
+      </div>
+      <div style={{ fontFamily: UBC.fm, fontSize: "12px", letterSpacing: "0.08em", textTransform: "uppercase", color: UBC.inkSoft, marginTop: "10px" }}>
+        step {step + 1} of 4
+      </div>
 
-        {/* PART 1 — your details */}
-        <section style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-          <SectionTitle n="01" t="your details" />
-          <div>
-            <FieldLabel req>full name</FieldLabel>
-            <Input required value={d.name} onChange={(e) => set("name", e.target.value)} className="rounded-full h-11" style={inputStyle} />
-          </div>
-          <div>
-            <FieldLabel req>your role</FieldLabel>
-            <NativeSelect value={d.role} onChange={(e) => set("role", e.target.value)} placeholder="select…" options={ROLES} />
-          </div>
-          <div>
-            <FieldLabel req>email</FieldLabel>
-            <Input type="email" required value={d.email} onChange={(e) => set("email", e.target.value)} className="rounded-full h-11" style={inputStyle} />
-          </div>
-          <div>
-            <FieldLabel req>phone number</FieldLabel>
-            <Input type="tel" required value={d.phone} onChange={(e) => set("phone", e.target.value)} className="rounded-full h-11" style={inputStyle} />
-          </div>
-        </section>
+      {/* sliding panel */}
+      <div style={{ overflow: "hidden", marginTop: "16px" }}>
+        <div key={step} className="ubpf-slide" style={{ ["--fromX"]: dir >= 0 ? "48px" : "-48px", display: "flex", flexDirection: "column", gap: "14px" }}>
+          <h3 style={{ fontFamily: UBC.fd, fontWeight: 700, fontSize: "20px", textTransform: "uppercase", letterSpacing: "0.01em", color: UBC.ink, margin: "0 0 2px" }}>
+            {STEP_LABELS[step]}
+          </h3>
 
-        {/* PART 2 — what you offer */}
-        <section style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-          <SectionTitle n="02" t="what you offer" />
-          <div>
-            <FieldLabel req>which city would you like to host in?</FieldLabel>
-            <NativeSelect value={d.city} onChange={(e) => set("city", e.target.value)} placeholder="select a city…" options={CITIES} />
-          </div>
-          <div>
-            <FieldLabel req>what best describes you?</FieldLabel>
-            <div style={{ display: "grid", gap: "10px" }}>
-              {CATEGORIES.map((c) => {
-                const active = cat === c.value;
-                return (
-                  <button type="button" key={c.value} onClick={() => set("partnerCategory", c.value)}
-                    style={{ textAlign: "left", borderRadius: "16px", padding: "14px 16px", cursor: "pointer",
-                      border: active ? `2px solid ${UBC.violet}` : `1px solid ${UBC.line}`,
-                      background: active ? "linear-gradient(160deg, #E4DCFB, #D2E6FA)" : "#FFFFFF" }}>
-                    <div style={{ fontFamily: UBC.fd, fontWeight: 700, fontSize: "16px", color: UBC.ink }}>{c.title}</div>
-                    <div style={{ fontSize: "13px", color: UBC.inkSoft, marginTop: "2px" }}>{c.blurb}</div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </section>
+          {step === 0 && (
+            <>
+              <div><FieldLabel req>full name</FieldLabel><Input value={d.name} onChange={(e) => set("name", e.target.value)} className="rounded-full h-11" style={inputStyle} /></div>
+              <div><FieldLabel req>your role</FieldLabel><NativeSelect value={d.role} onChange={(e) => set("role", e.target.value)} placeholder="select…" options={ROLES} /></div>
+              <div><FieldLabel req>email</FieldLabel><Input type="email" value={d.email} onChange={(e) => set("email", e.target.value)} className="rounded-full h-11" style={inputStyle} /></div>
+              <div><FieldLabel req>phone number</FieldLabel><Input type="tel" value={d.phone} onChange={(e) => set("phone", e.target.value)} className="rounded-full h-11" style={inputStyle} /></div>
+            </>
+          )}
 
-        {/* PART 3 — branches by category */}
-        {cat && (
-          <section style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            <SectionTitle n="03" t={isRestaurant ? "about your restaurant or bar" : isVenue ? "about your venue" : "about your experience"} />
-
-            <div>
-              <FieldLabel req>{isCurator ? "name of your business or experience" : isVenue ? "name of your venue" : "name of your restaurant or bar"}</FieldLabel>
-              <Input required value={d.businessName} onChange={(e) => set("businessName", e.target.value)} className="rounded-full h-11" style={inputStyle} />
-            </div>
-
-            {isCurator && (
+          {step === 1 && (
+            <>
+              <div><FieldLabel req>which city would you like to host in?</FieldLabel><NativeSelect value={d.city} onChange={(e) => set("city", e.target.value)} placeholder="select a city…" options={CITIES} /></div>
               <div>
-                <FieldLabel req>describe your typical events</FieldLabel>
-                <Textarea required rows={4} value={d.typicalEvents} onChange={(e) => set("typicalEvents", e.target.value)} placeholder="size, frequency, programming — the more detail the better" className="rounded-2xl" style={inputStyle} />
+                <FieldLabel req>what best describes you?</FieldLabel>
+                <div style={{ display: "grid", gap: "10px" }}>
+                  {CATEGORIES.map((c) => {
+                    const active = cat === c.value;
+                    return (
+                      <button type="button" key={c.value} onClick={() => set("partnerCategory", c.value)}
+                        style={{ textAlign: "left", borderRadius: "16px", padding: "14px 16px", cursor: "pointer",
+                          border: active ? `2px solid ${UBC.violet}` : `1px solid ${UBC.line}`,
+                          background: active ? "linear-gradient(160deg, #E4DCFB, #D2E6FA)" : "#FFFFFF" }}>
+                        <div style={{ fontFamily: UBC.fd, fontWeight: 700, fontSize: "16px", color: UBC.ink }}>{c.title}</div>
+                        <div style={{ fontSize: "13px", color: UBC.inkSoft, marginTop: "2px" }}>{c.blurb}</div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            )}
+            </>
+          )}
 
-            <div>
-              <FieldLabel req>{isCurator ? "where do you run it?" : "address"}</FieldLabel>
-              <Input required value={d.address} onChange={(e) => set("address", e.target.value)} className="rounded-full h-11" style={inputStyle} />
-            </div>
+          {step === 2 && (
+            <>
+              <div><FieldLabel req>{isCurator ? "name of your business or experience" : isVenue ? "name of your venue" : "name of your restaurant or bar"}</FieldLabel><Input value={d.businessName} onChange={(e) => set("businessName", e.target.value)} className="rounded-full h-11" style={inputStyle} /></div>
+              {isCurator && <div><FieldLabel req>describe your typical events</FieldLabel><Textarea rows={4} value={d.typicalEvents} onChange={(e) => set("typicalEvents", e.target.value)} placeholder="size, frequency, programming — the more detail the better" className="rounded-2xl" style={inputStyle} /></div>}
+              <div><FieldLabel req>{isCurator ? "where do you run it?" : "address"}</FieldLabel><Input value={d.address} onChange={(e) => set("address", e.target.value)} className="rounded-full h-11" style={inputStyle} /></div>
+              {isVenue && <div><FieldLabel req>what type of space is it?</FieldLabel><Input value={d.spaceType} onChange={(e) => set("spaceType", e.target.value)} placeholder="e.g. bar, gallery, bowling, sauna, studio" className="rounded-full h-11" style={inputStyle} /></div>}
+              {isRestaurant && <div><FieldLabel>cuisine or vibe</FieldLabel><Input value={d.cuisineVibe} onChange={(e) => set("cuisineVibe", e.target.value)} placeholder="helps us match the right group" className="rounded-full h-11" style={inputStyle} /></div>}
+              <div><FieldLabel req>{isCurator ? "typical group size you can host" : isVenue ? "maximum capacity" : "roughly how many can you seat for a group?"}</FieldLabel><Input type="number" value={d.capacity} onChange={(e) => set("capacity", e.target.value)} className="rounded-full h-11" style={inputStyle} /></div>
+              {isCurator && <div><FieldLabel req>ticket price (£)</FieldLabel><Input type="number" value={d.ticketPrice} onChange={(e) => set("ticketPrice", e.target.value)} placeholder="you keep 90%" className="rounded-full h-11" style={inputStyle} /></div>}
+              {(isRestaurant || isVenue) && <div><FieldLabel req>do you have a private or semi-private area?</FieldLabel><NativeSelect value={d.privateArea} onChange={(e) => set("privateArea", e.target.value)} placeholder="select…" options={PRIVATE_AREA} /></div>}
+              {isRestaurant && <div><FieldLabel>average spend per head</FieldLabel><NativeSelect value={d.avgSpend} onChange={(e) => set("avgSpend", e.target.value)} placeholder="select…" options={SPEND} allowBlank /></div>}
+              {isCurator && <div><FieldLabel>how often do you run events?</FieldLabel><NativeSelect value={d.eventFrequency} onChange={(e) => set("eventFrequency", e.target.value)} placeholder="select…" options={FREQ} allowBlank /></div>}
+              <div><FieldLabel>website</FieldLabel><Input type="url" value={d.website} onChange={(e) => set("website", e.target.value)} placeholder="https://" className="rounded-full h-11" style={inputStyle} /></div>
+              <div><FieldLabel>social media</FieldLabel><Input value={d.socialMedia} onChange={(e) => set("socialMedia", e.target.value)} placeholder="handle or link" className="rounded-full h-11" style={inputStyle} /></div>
+            </>
+          )}
 
-            {isVenue && (
+          {step === 3 && (
+            <>
               <div>
-                <FieldLabel req>what type of space is it?</FieldLabel>
-                <Input required value={d.spaceType} onChange={(e) => set("spaceType", e.target.value)} placeholder="e.g. bar, gallery, bowling, sauna, studio" className="rounded-full h-11" style={inputStyle} />
+                <FieldLabel>which nights would you most like to fill?</FieldLabel>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  {NIGHTS.map((n) => {
+                    const on = d.preferredNights.includes(n);
+                    return (
+                      <button type="button" key={n} onClick={() => toggleNight(n)}
+                        style={{ fontFamily: UBC.fm, fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.04em",
+                          borderRadius: "999px", padding: "8px 14px", cursor: "pointer",
+                          border: on ? "none" : `1px solid ${UBC.line}`,
+                          background: on ? UBC.gradCta : "#FFFFFF", color: on ? "#FFFFFF" : UBC.inkSoft }}>
+                        {n}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            )}
+              <div><FieldLabel>anything else we should know?</FieldLabel><Textarea rows={4} value={d.notes} onChange={(e) => set("notes", e.target.value)} className="rounded-2xl" style={inputStyle} /></div>
+              <div><FieldLabel>how did you hear about us?</FieldLabel><Input value={d.howHeard} onChange={(e) => set("howHeard", e.target.value)} className="rounded-full h-11" style={inputStyle} /></div>
+            </>
+          )}
+        </div>
+      </div>
 
-            {isRestaurant && (
-              <div>
-                <FieldLabel>cuisine or vibe</FieldLabel>
-                <Input value={d.cuisineVibe} onChange={(e) => set("cuisineVibe", e.target.value)} placeholder="helps us match the right group" className="rounded-full h-11" style={inputStyle} />
-              </div>
-            )}
-
-            <div>
-              <FieldLabel req>{isCurator ? "typical group size you can host" : isVenue ? "maximum capacity" : "roughly how many can you seat for a group?"}</FieldLabel>
-              <Input type="number" required value={d.capacity} onChange={(e) => set("capacity", e.target.value)} className="rounded-full h-11" style={inputStyle} />
-            </div>
-
-            {isCurator && (
-              <div>
-                <FieldLabel req>ticket price (£)</FieldLabel>
-                <Input type="number" required value={d.ticketPrice} onChange={(e) => set("ticketPrice", e.target.value)} placeholder="you keep 90%" className="rounded-full h-11" style={inputStyle} />
-              </div>
-            )}
-
-            {(isRestaurant || isVenue) && (
-              <div>
-                <FieldLabel req>do you have a private or semi-private area?</FieldLabel>
-                <NativeSelect value={d.privateArea} onChange={(e) => set("privateArea", e.target.value)} placeholder="select…" options={PRIVATE_AREA} />
-              </div>
-            )}
-
-            {isRestaurant && (
-              <div>
-                <FieldLabel>average spend per head</FieldLabel>
-                <NativeSelect value={d.avgSpend} onChange={(e) => set("avgSpend", e.target.value)} placeholder="select…" options={SPEND} allowBlank />
-              </div>
-            )}
-
-            {isCurator && (
-              <div>
-                <FieldLabel>how often do you run events?</FieldLabel>
-                <NativeSelect value={d.eventFrequency} onChange={(e) => set("eventFrequency", e.target.value)} placeholder="select…" options={FREQ} allowBlank />
-              </div>
-            )}
-
-            <div>
-              <FieldLabel>website</FieldLabel>
-              <Input type="url" value={d.website} onChange={(e) => set("website", e.target.value)} placeholder="https://" className="rounded-full h-11" style={inputStyle} />
-            </div>
-            <div>
-              <FieldLabel>social media</FieldLabel>
-              <Input value={d.socialMedia} onChange={(e) => set("socialMedia", e.target.value)} placeholder="handle or link" className="rounded-full h-11" style={inputStyle} />
-            </div>
-          </section>
+      {/* nav */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", marginTop: "28px" }}>
+        {step > 0 ? (
+          <button type="button" onClick={goBack}
+            style={{ background: "transparent", color: UBC.inkSoft, fontFamily: UBC.fb, fontWeight: 700, fontSize: "15px", border: `1px solid ${UBC.line}`, borderRadius: "999px", padding: "13px 24px", cursor: "pointer" }}>
+            back
+          </button>
+        ) : <span />}
+        {step < 3 ? (
+          <button type="button" onClick={goNext}
+            style={{ background: UBC.gradCta, color: "#FFFFFF", fontFamily: UBC.fb, fontWeight: 700, fontSize: "15px", border: "none", borderRadius: "999px", padding: "13px 30px", cursor: "pointer", boxShadow: "0 10px 24px rgba(139,108,246,0.34)" }}>
+            next
+          </button>
+        ) : (
+          <button type="button" onClick={handleSubmit} disabled={pending}
+            style={{ background: UBC.gradCta, color: "#FFFFFF", fontFamily: UBC.fb, fontWeight: 700, fontSize: "15px", border: "none", borderRadius: "999px", padding: "13px 30px", cursor: "pointer", boxShadow: "0 10px 24px rgba(139,108,246,0.34)", opacity: pending ? 0.7 : 1 }}>
+            {pending ? "sending…" : "request a call"}
+          </button>
         )}
-
-        {/* PART 4 — wrap up */}
-        <section style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-          <SectionTitle n="04" t="wrap up" />
-          <div>
-            <FieldLabel>which nights would you most like to fill?</FieldLabel>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-              {NIGHTS.map((n) => {
-                const on = d.preferredNights.includes(n);
-                return (
-                  <button type="button" key={n} onClick={() => toggleNight(n)}
-                    style={{ fontFamily: UBC.fm, fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.04em",
-                      borderRadius: "999px", padding: "8px 14px", cursor: "pointer",
-                      border: on ? "none" : `1px solid ${UBC.line}`,
-                      background: on ? UBC.gradCta : "#FFFFFF", color: on ? "#FFFFFF" : UBC.inkSoft }}>
-                    {n}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <div>
-            <FieldLabel>anything else we should know?</FieldLabel>
-            <Textarea rows={4} value={d.notes} onChange={(e) => set("notes", e.target.value)} className="rounded-2xl" style={inputStyle} />
-          </div>
-          <div>
-            <FieldLabel>how did you hear about us?</FieldLabel>
-            <Input value={d.howHeard} onChange={(e) => set("howHeard", e.target.value)} className="rounded-full h-11" style={inputStyle} />
-          </div>
-        </section>
-
-        <Button type="submit" disabled={createRecord.status === "pending"} className="w-full rounded-full font-bold"
-          style={{ background: UBC.gradCta, color: "#FFFFFF", fontFamily: UBC.fb, fontSize: "16px", height: "50px", boxShadow: "0 10px 26px rgba(139,108,246,0.38)", border: "none" }}>
-          {createRecord.status === "pending" ? "sending…" : "request a call"}
-        </Button>
-      </form>
+      </div>
     </div>
   );
 }
