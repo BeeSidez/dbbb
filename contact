@@ -1,0 +1,176 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useTextSetting, useNavigationSetting } from "@/lib/editable-settings";
+import { useRecordCreate, q } from "@/lib/datasource";
+import { toast } from "sonner";
+
+const fields = q.select({
+  name: "nAWE0",
+  description: "Cdwtd",
+  email: "iQBvL",
+  location: "i9mwZ",
+});
+
+// ─── unboring tokens ────────────────────────────────────────────────
+const UBC = {
+  ink: "#17141F",
+  inkSoft: "#615C70",
+  violet: "#8B6CF6",
+  line: "#D6CFE6",
+  gradCta: "linear-gradient(120deg, #8B6CF6 0%, #ED6CA8 100%)",
+  fd: "'Baloo 2', sans-serif",
+  fb: "'Hanken Grotesque', sans-serif",
+  fm: "'DM Mono', monospace",
+};
+
+export default function Block() {
+  const [formData, setFormData] = useState({ name: "", email: "", location: "", message: "" });
+
+  const title = useTextSetting({ name: "title", label: "Title", initialValue: "contact us." });
+  const membershipTitle = useTextSetting({ name: "membership-title", label: "Membership Title", initialValue: "for membership support" });
+  const membershipSubtitle = useTextSetting({ name: "membership-subtitle", label: "Membership Subtitle", initialValue: "text us by clicking below." });
+  const phoneNumber = useTextSetting({ name: "phone-number", label: "Phone Number", initialValue: "+447970416535" });
+  const partnerTitle = useTextSetting({ name: "partner-title", label: "Partner Title", initialValue: "restaurateur, venue owner, or event curator?" });
+  const partnerSubtitle = useTextSetting({ name: "partner-subtitle", label: "Partner Subtitle", initialValue: "message us by clicking below." });
+  const partnerButtonText = useTextSetting({ name: "partner-button", label: "Partner Button Text", initialValue: "become an unboring partner" });
+  const formTitle = useTextSetting({ name: "form-title", label: "Form Title", initialValue: "for all other inquiries," });
+  const formSubtitle = useTextSetting({ name: "form-subtitle", label: "Form Subtitle", initialValue: "fill out the form below." });
+
+  const partnerLink = useNavigationSetting({
+    name: "partner-link",
+    label: "Partner Link",
+    initialValue: { destination: "/", openIn: "TAB" },
+  });
+
+  const createRecord = useRecordCreate({
+    fields,
+    onSuccess: () => {
+      toast.success("message sent — we'll be in touch!");
+      setFormData({ name: "", email: "", location: "", message: "" });
+    },
+    onError: (error) => {
+      toast.error(`error: ${error.message}`);
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    createRecord.mutate({
+      name: formData.name,
+      email: formData.email,
+      location: formData.location,
+      description: formData.message,
+    });
+  };
+
+  const inputStyle = {
+    backgroundColor: "#FFFFFF",
+    borderColor: UBC.line,
+    color: UBC.ink,
+    fontFamily: UBC.fb,
+    fontSize: "15px",
+  };
+
+  return (
+    <div className="w-full p-6" style={{ fontFamily: UBC.fb, maxWidth: "520px", marginLeft: "auto", marginRight: "auto" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Hanken+Grotesque:wght@400;500;700&family=DM+Mono:wght@500&display=swap');`}</style>
+
+      <div style={{ fontFamily: UBC.fm, fontSize: "12px", fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: UBC.violet, marginBottom: "8px" }}>
+        get in touch
+      </div>
+      <h2 style={{ fontFamily: UBC.fd, fontWeight: 800, fontSize: "34px", lineHeight: 1, letterSpacing: "-0.01em", textTransform: "uppercase", color: UBC.ink, margin: 0 }}>
+        {title}
+      </h2>
+
+      <div className="space-y-5" style={{ marginTop: "24px" }}>
+        <section className="rounded-2xl p-5" style={{ background: "linear-gradient(160deg, #FBDDEC, #F0D9F7)" }}>
+          <h3 style={{ fontFamily: UBC.fd, fontWeight: 700, fontSize: "19px", color: UBC.ink, margin: "0 0 2px" }}>
+            {membershipTitle}
+          </h3>
+          <p style={{ fontSize: "14px", color: UBC.inkSoft, margin: "0 0 14px" }}>
+            {membershipSubtitle}
+          </p>
+          <Button
+            className="w-full rounded-full font-bold"
+            style={{ backgroundColor: "rgba(255,255,255,0.85)", color: UBC.ink, border: `1.5px solid ${UBC.ink}`, fontFamily: UBC.fb, fontSize: "15px", height: "44px" }}
+            onClick={() => window.location.href = `tel:${phoneNumber}`}
+          >
+            {phoneNumber}
+          </Button>
+        </section>
+
+        <section className="rounded-2xl p-5" style={{ background: "linear-gradient(160deg, #E4DCFB, #D2E6FA)" }}>
+          <h3 style={{ fontFamily: UBC.fd, fontWeight: 700, fontSize: "19px", color: UBC.ink, margin: "0 0 2px" }}>
+            {partnerTitle}
+          </h3>
+          <p style={{ fontSize: "14px", color: UBC.inkSoft, margin: "0 0 14px" }}>
+            {partnerSubtitle}
+          </p>
+          <Button
+            className="w-full rounded-full font-bold"
+            style={{ backgroundColor: UBC.ink, color: "#FFFFFF", fontFamily: UBC.fb, fontSize: "15px", height: "44px" }}
+            asChild
+          >
+            <a href={partnerLink.destination} target={partnerLink.openIn === "TAB" ? "_blank" : "_self"}>
+              {partnerButtonText}
+            </a>
+          </Button>
+        </section>
+
+        <section>
+          <h3 style={{ fontFamily: UBC.fd, fontWeight: 700, fontSize: "19px", color: UBC.ink, margin: "0 0 2px" }}>
+            {formTitle}
+          </h3>
+          <p style={{ fontSize: "14px", color: UBC.inkSoft, margin: "0 0 14px" }}>
+            {formSubtitle}
+          </p>
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <Input
+              placeholder="name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+              className="rounded-full h-11"
+              style={inputStyle}
+            />
+            <Input
+              type="email"
+              placeholder="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              required
+              className="rounded-full h-11"
+              style={inputStyle}
+            />
+            <Input
+              placeholder="location"
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              className="rounded-full h-11"
+              style={inputStyle}
+            />
+            <Textarea
+              placeholder="message"
+              value={formData.message}
+              onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+              required
+              rows={5}
+              className="rounded-2xl"
+              style={inputStyle}
+            />
+            <Button
+              type="submit"
+              disabled={createRecord.status === "pending"}
+              className="w-full rounded-full font-bold"
+              style={{ background: UBC.gradCta, color: "#FFFFFF", fontFamily: UBC.fb, fontSize: "16px", height: "48px", boxShadow: "0 10px 26px rgba(139,108,246,0.38)", border: "none" }}
+            >
+              {createRecord.status === "pending" ? "sending..." : "send it"}
+            </Button>
+          </form>
+        </section>
+      </div>
+    </div>
+  );
+}
