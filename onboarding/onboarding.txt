@@ -1,0 +1,512 @@
+<!-- unboring — member onboarding (Custom Code block, the Onboarding page) -->
+<!-- Implemented from the Claude Design handoff (onboarding/Onboarding.html). -->
+<!-- 3-card flow: details -> curate first experience -> membership -> /paywall. -->
+<!-- Greeting pulls the member's first name from Softr's logged-in user. -->
+<!-- Note: this is a CUSTOM CODE block (raw HTML/CSS/JS), not a vibe block. -->
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400..800&family=Hanken+Grotesque:wght@400..800&family=DM+Mono:wght@400;500&display=swap');
+:root{
+  --paper:#F4F2FB; --paper-2:#ECE9F7; --cloud:#FFFFFF;
+  --ink:#17141F; --ink-soft:#615C70; --ink-faint:#A39EB2; --line:#E5E0F0; --line-strong:#D6CFE6;
+  --rose:#ED6CA8; --rose-tint:#FBDDEC; --rose-ink:#97265F;
+  --violet:#8B6CF6; --violet-tint:#E4DCFB; --violet-ink:#4A2C9E;
+  --sun:#6E7BF2; --sun-tint:#DCE0FB; --sun-ink:#2E37A2;
+  --periwinkle-tint:#DCE0FB; --periwinkle-ink:#2E37A2;
+  --grad-cta:linear-gradient(120deg,#8B6CF6 0%,#ED6CA8 100%);
+  --grad-blob:radial-gradient(circle at 36% 30%,#FBD9EC,#E0C3FC 48%,#CBDDFF 82%);
+  --glow-cta:0 12px 32px rgba(139,108,246,0.38);
+  --radius-sm:8px; --radius-md:14px; --radius-lg:22px; --radius-xl:32px; --radius-2xl:44px; --radius-pill:999px;
+  --shadow-sm:0 2px 8px rgba(23,20,31,.06); --shadow-md:0 8px 24px rgba(23,20,31,.09); --shadow-lg:0 18px 48px rgba(23,20,31,.12); --shadow-xl:0 28px 70px rgba(23,20,31,.15);
+  --font-display:'Baloo 2','Hanken Grotesque',system-ui,sans-serif; --font-body:'Hanken Grotesque',system-ui,-apple-system,sans-serif; --font-mono:'DM Mono',ui-monospace,Menlo,monospace;
+  --text-mono-kicker:13px;
+  --ease-out:cubic-bezier(.22,1,.36,1); --ease-spring:cubic-bezier(.34,1.56,.64,1); --dur-fast:140ms; --dur:240ms; --dur-slow:420ms;
+}
+@keyframes ub-pop{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}
+@keyframes ub-drop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+
+#ub-onb{background:var(--paper);color:var(--ink);font-family:var(--font-body);-webkit-font-smoothing:antialiased;min-height:100vh}
+#ub-onb *{margin:0;padding:0;box-sizing:border-box}
+
+#ub-onb .u-kicker{font-family:var(--font-mono);font-size:var(--text-mono-kicker);font-weight:500;line-height:1;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-soft)}
+
+#ub-onb .stage{position:relative;min-height:100vh;width:100%;display:flex;justify-content:center;padding:0 16px 48px;overflow:hidden}
+#ub-onb .stage::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(120% 70% at 50% -8%, #FBD9EC 0%, rgba(251,217,236,0) 42%),radial-gradient(120% 80% at 50% -2%, #E0C3FC 0%, rgba(224,195,252,0) 50%),var(--paper)}
+#ub-onb .col{position:relative;z-index:1;width:100%;max-width:432px}
+
+#ub-onb .top{padding:40px 6px 22px;text-align:center}
+#ub-onb .blob{position:relative;display:inline-block;border-radius:47% 53% 44% 56% / 58% 42% 58% 42%;background:var(--grad-blob);flex-shrink:0}
+#ub-onb .blob .eye{position:absolute;border-radius:50%;background:var(--ink)}
+#ub-onb .blob .mouth{position:absolute;border-radius:0 0 999px 999px;background:var(--ink)}
+#ub-onb .hello{display:flex;flex-direction:column;align-items:center;gap:14px}
+#ub-onb .greet{font-family:var(--font-display);font-weight:800;font-size:33px;line-height:1.04;letter-spacing:-0.01em;color:var(--ink);text-wrap:pretty;max-width:14ch}
+#ub-onb .greet em{font-style:normal;background:var(--grad-cta);-webkit-background-clip:text;background-clip:text;color:transparent}
+#ub-onb .greet-sub{font-size:16px;line-height:1.55;color:var(--ink-soft);max-width:30ch;text-wrap:pretty}
+
+#ub-onb .card{background:var(--cloud);border:1px solid var(--line);border-radius:var(--radius-xl);box-shadow:var(--shadow-lg);padding:26px 22px 24px;margin-top:22px}
+#ub-onb .card[hidden]{display:none}
+#ub-onb .card__head{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+#ub-onb .card__head .u-kicker{white-space:nowrap}
+#ub-onb .steps{display:flex;gap:7px;margin-left:auto}
+#ub-onb .dot{width:8px;height:8px;border-radius:50%;background:var(--line-strong);transition:all var(--dur) var(--ease-out)}
+#ub-onb .dot.on{background:var(--grad-cta);width:22px;border-radius:999px}
+#ub-onb .back{display:inline-flex;align-items:center;gap:4px;background:none;border:none;cursor:pointer;font-family:var(--font-mono);font-size:12px;letter-spacing:0.04em;color:var(--ink-soft);padding:4px 2px}
+#ub-onb .back:hover{color:var(--ink)}
+#ub-onb .back svg{width:14px;height:14px}
+#ub-onb .card__title{font-family:var(--font-display);font-weight:700;font-size:27px;line-height:1.05;letter-spacing:-0.01em;color:var(--ink)}
+#ub-onb .card__sub{font-size:14.5px;line-height:1.5;color:var(--ink-soft);margin-top:7px;text-wrap:pretty}
+
+#ub-onb .field{margin-top:22px}
+#ub-onb .field > label{display:block;font-family:var(--font-mono);font-size:11px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:9px}
+#ub-onb .seg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+#ub-onb .seg__opt{font-family:var(--font-body);font-weight:700;font-size:13.5px;color:var(--ink-soft);background:var(--cloud);box-shadow:inset 0 0 0 1.5px var(--line);border:none;border-radius:var(--radius-md);padding:13px 6px;cursor:pointer;transition:transform var(--dur-fast) var(--ease-out),box-shadow var(--dur) var(--ease-out),background var(--dur) var(--ease-out),color var(--dur) var(--ease-out);text-wrap:balance;line-height:1.15}
+#ub-onb .seg__opt:hover{box-shadow:inset 0 0 0 1.5px var(--line-strong)}
+#ub-onb .seg__opt:active{transform:scale(0.97)}
+#ub-onb .seg__opt.on{background:var(--violet-tint);color:var(--violet-ink);box-shadow:inset 0 0 0 1.6px var(--violet)}
+#ub-onb .control{width:100%;display:flex;align-items:center;gap:10px;text-align:left;background:var(--cloud);box-shadow:inset 0 0 0 1.5px var(--line);border:none;border-radius:var(--radius-md);padding:14px 15px;cursor:pointer;font-family:var(--font-body);font-size:15.5px;color:var(--ink);transition:box-shadow var(--dur) var(--ease-out),transform var(--dur-fast) var(--ease-out)}
+#ub-onb .control:hover{box-shadow:inset 0 0 0 1.5px var(--line-strong)}
+#ub-onb .control .ph{color:var(--ink-faint)}
+#ub-onb .control .ico{margin-left:auto;color:var(--ink-faint);display:flex}
+#ub-onb .control .ico svg{width:18px;height:18px}
+#ub-onb .control.open{box-shadow:inset 0 0 0 2px var(--violet),0 0 0 4px var(--violet-tint)}
+#ub-onb .control.open .ico{color:var(--violet);transform:rotate(180deg);transition:transform var(--dur) var(--ease-out)}
+#ub-onb .control.cal-open .ico{transform:none}
+#ub-onb .control.filled .ph{color:var(--ink)}
+#ub-onb .chip-wrap{display:flex;flex-wrap:wrap;gap:8px}
+#ub-onb .chip{display:inline-flex;align-items:center;gap:8px;background:var(--violet-tint);color:var(--violet-ink);border-radius:var(--radius-pill);padding:11px 8px 11px 16px;font-weight:700;font-size:14.5px;max-width:100%;animation:ub-pop .32s var(--ease-spring) both}
+#ub-onb .chip .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#ub-onb .chip__x{flex-shrink:0;width:24px;height:24px;border-radius:50%;border:none;cursor:pointer;background:rgba(74,44,158,0.12);color:var(--violet-ink);display:grid;place-items:center;transition:background var(--dur-fast) var(--ease-out)}
+#ub-onb .chip__x:hover{background:rgba(74,44,158,0.22)}
+#ub-onb .chip__x svg{width:14px;height:14px}
+#ub-onb .panel{margin-top:9px;background:var(--cloud);border:1px solid var(--line);border-radius:var(--radius-md);box-shadow:var(--shadow-md);overflow:hidden;animation:ub-drop .26s var(--ease-out) both}
+#ub-onb .list{max-height:236px;overflow-y:auto;padding:6px}
+#ub-onb .list__item{width:100%;text-align:left;background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:var(--radius-sm);font-family:var(--font-body);font-size:15px;color:var(--ink)}
+#ub-onb .list__item:hover{background:var(--paper)}
+#ub-onb .list__item .tod{margin-left:auto;font-family:var(--font-mono);font-size:10.5px;letter-spacing:0.05em;text-transform:uppercase;color:var(--ink-faint)}
+#ub-onb .list__item .lico{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex-shrink:0}
+#ub-onb .list__item .lico svg{width:16px;height:16px}
+#ub-onb .cal{padding:14px 14px 16px}
+#ub-onb .cal__head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+#ub-onb .cal__title{font-family:var(--font-display);font-weight:700;font-size:16.5px;color:var(--ink);display:inline-flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:8px}
+#ub-onb .cal__title.static{cursor:default}
+#ub-onb .cal__title:not(.static):hover{background:var(--paper)}
+#ub-onb .cal__title .ms{font-family:var(--font-mono);font-size:11px;color:var(--ink-faint)}
+#ub-onb .cal__nav{width:32px;height:32px;border-radius:50%;border:none;cursor:pointer;background:var(--paper);color:var(--ink-soft);display:grid;place-items:center}
+#ub-onb .cal__nav:hover:not(:disabled){background:var(--paper-2);color:var(--ink)}
+#ub-onb .cal__nav:disabled{opacity:0;pointer-events:none}
+#ub-onb .cal__nav svg{width:17px;height:17px}
+#ub-onb .cal__dow{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:4px}
+#ub-onb .cal__dow span{text-align:center;font-family:var(--font-mono);font-size:10px;letter-spacing:0.03em;text-transform:uppercase;color:var(--ink-faint);padding:5px 0}
+#ub-onb .cal__grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+#ub-onb .cal__day{aspect-ratio:1;border:none;background:none;cursor:pointer;border-radius:11px;font-family:var(--font-body);font-size:14.5px;font-weight:600;color:var(--ink);display:grid;place-items:center;position:relative;transition:background var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out)}
+#ub-onb .cal__day:hover:not(.muted):not(.sel){background:var(--violet-tint);color:var(--violet-ink)}
+#ub-onb .cal__day.muted{color:var(--ink-faint);opacity:0.32;cursor:default;pointer-events:none;font-weight:400}
+#ub-onb .cal__day.today:not(.sel)::after{content:"";position:absolute;bottom:6px;width:4px;height:4px;border-radius:50%;background:var(--rose)}
+#ub-onb .cal__day.sel{background:var(--grad-cta);color:#fff}
+#ub-onb .cal__years{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-height:228px;overflow-y:auto;padding:2px}
+#ub-onb .cal__year{border:none;background:var(--paper);cursor:pointer;border-radius:10px;padding:11px 0;font-family:var(--font-body);font-weight:600;font-size:14px;color:var(--ink)}
+#ub-onb .cal__year:hover{background:var(--violet-tint);color:var(--violet-ink)}
+#ub-onb .cal__year.sel{background:var(--grad-cta);color:#fff}
+#ub-onb .cta{width:100%;margin-top:26px;display:flex;align-items:center;justify-content:center;gap:9px;font-family:var(--font-body);font-weight:700;font-size:17px;color:#fff;background:var(--grad-cta);border:none;border-radius:var(--radius-pill);padding:17px 24px;cursor:pointer;box-shadow:var(--glow-cta);transition:transform var(--dur-fast) var(--ease-out),box-shadow var(--dur) var(--ease-out),opacity var(--dur) var(--ease-out)}
+#ub-onb .cta svg{width:18px;height:18px}
+#ub-onb .cta:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 18px 44px rgba(139,108,246,0.46)}
+#ub-onb .cta:active:not(:disabled){transform:scale(0.98)}
+#ub-onb .cta:disabled{opacity:0.4;box-shadow:none;cursor:not-allowed;filter:saturate(0.7)}
+#ub-onb .cta-note{text-align:center;font-family:var(--font-mono);font-size:11px;letter-spacing:0.03em;color:var(--ink-faint);margin-top:14px}
+#ub-onb .or{display:flex;align-items:center;gap:14px;margin:30px 2px 20px}
+#ub-onb .or::before,#ub-onb .or::after{content:"";flex:1;height:1px;background:var(--line)}
+#ub-onb .or span{font-family:var(--font-mono);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-faint)}
+#ub-onb .invites{display:flex;flex-direction:column;gap:14px}
+#ub-onb .invite{position:relative;text-align:left;width:100%;cursor:pointer;background:var(--cloud);border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden;padding:0;box-shadow:var(--shadow-sm);transition:transform var(--dur) var(--ease-out),box-shadow var(--dur) var(--ease-out)}
+#ub-onb .invite:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+#ub-onb .invite:active{transform:scale(0.99)}
+#ub-onb .invite__ph{height:96px;position:relative;display:flex;align-items:flex-end;padding:11px}
+#ub-onb .invite__cap{font-family:var(--font-mono);font-size:9.5px;background:rgba(255,255,255,0.72);padding:3px 7px;border-radius:6px}
+#ub-onb .invite__tod{position:absolute;top:11px;left:11px;display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10.5px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;background:rgba(255,255,255,0.92);padding:5px 11px 5px 9px;border-radius:999px}
+#ub-onb .invite__tod svg{width:13px;height:13px}
+#ub-onb .invite__body{padding:14px 16px 16px;display:flex;align-items:flex-start;gap:12px}
+#ub-onb .invite__txt{min-width:0}
+#ub-onb .invite__when{font-family:var(--font-mono);font-size:11px;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:5px}
+#ub-onb .invite__title{font-family:var(--font-display);font-weight:700;font-size:18.5px;line-height:1.12;letter-spacing:-0.01em;color:var(--ink)}
+#ub-onb .invite__line{font-size:13px;color:var(--ink-soft);margin-top:6px;line-height:1.4}
+#ub-onb .invite__go{margin-left:auto;align-self:center;flex-shrink:0;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:#fff}
+#ub-onb .invite__go svg{width:18px;height:18px}
+#ub-onb .foot-note{text-align:center;font-size:13px;color:var(--ink-soft);margin:26px 8px 8px;line-height:1.5}
+#ub-onb .m-hero{border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden;margin-top:18px}
+#ub-onb .m-hero__bar{height:8px}
+#ub-onb .m-hero__body{padding:14px 15px;display:flex;align-items:center;gap:13px;background:var(--cloud)}
+#ub-onb .m-hero__ico{width:42px;height:42px;border-radius:13px;flex-shrink:0;display:grid;place-items:center}
+#ub-onb .m-hero__ico svg{width:21px;height:21px}
+#ub-onb .m-hero__txt{min-width:0}
+#ub-onb .m-hero__title{font-family:var(--font-display);font-weight:700;font-size:15.5px;line-height:1.15;letter-spacing:-0.01em;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ub-onb .m-hero__meta{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:12.5px;color:var(--ink-soft)}
+#ub-onb .m-hero__meta svg{width:13px;height:13px;flex-shrink:0}
+#ub-onb .m-price{margin-top:18px;display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+#ub-onb .m-price__lbl{font-family:var(--font-display);font-weight:700;font-size:18px;color:var(--ink)}
+#ub-onb .m-price__val{font-family:var(--font-display);font-weight:800;font-size:22px;color:var(--ink);white-space:nowrap}
+#ub-onb .m-price__val small{font-family:var(--font-body);font-weight:600;font-size:13px;color:var(--ink-soft)}
+#ub-onb .m-sub{font-size:12.5px;color:var(--ink-soft);margin-top:6px}
+#ub-onb .m-group{margin-top:16px;display:flex;align-items:center;gap:11px}
+#ub-onb .m-group__ico{width:30px;height:30px;border-radius:9px;flex-shrink:0;display:grid;place-items:center;background:var(--periwinkle-tint);color:var(--periwinkle-ink)}
+#ub-onb .m-group__ico svg{width:16px;height:16px}
+#ub-onb .m-group span:last-child{font-size:14.5px;color:var(--ink)}
+#ub-onb .m-plus{margin-top:18px;padding:14px 15px;border-radius:var(--radius-md);background:var(--violet-tint);display:flex;align-items:center;gap:13px}
+#ub-onb .m-plus__txt{min-width:0;flex:1}
+#ub-onb .m-plus__lbl{font-weight:700;font-size:14.5px;color:var(--violet-ink)}
+#ub-onb .m-plus__note{font-size:12px;color:var(--violet-ink);opacity:0.78;margin-top:3px;line-height:1.4}
+#ub-onb .tog{position:relative;width:46px;height:28px;border-radius:999px;border:none;cursor:pointer;background:var(--line-strong);flex-shrink:0;transition:background var(--dur) var(--ease-out)}
+#ub-onb .tog::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:var(--shadow-sm);transition:transform var(--dur) var(--ease-spring)}
+#ub-onb .tog.on{background:var(--grad-cta)}
+#ub-onb .tog.on::after{transform:translateX(18px)}
+#ub-onb .m-incl{margin-top:20px}
+#ub-onb .inc-row{display:flex;align-items:center;gap:11px;padding:10px 0;border-top:1px solid var(--line)}
+#ub-onb .inc-row:first-of-type{border-top:none}
+#ub-onb .inc-ico{width:21px;height:21px;border-radius:50%;background:var(--violet-tint);color:var(--violet-ink);display:grid;place-items:center;flex-shrink:0}
+#ub-onb .inc-ico svg{width:13px;height:13px}
+#ub-onb .inc-row span:last-child{font-size:14.5px;color:var(--ink);line-height:1.3}
+@media (max-width:380px){#ub-onb .greet{font-size:29px}#ub-onb .seg__opt{font-size:12.5px}}
+@media (prefers-reduced-motion: reduce){#ub-onb .panel,#ub-onb .chip{animation:none!important}}
+</style>
+
+<div id="ub-onb">
+<div class="stage"><div class="col">
+
+  <div class="top"><div class="hello">
+    <span class="blob" id="heroBlob"></span>
+    <h1 class="greet" id="greet">you're in, <em>there</em>.</h1>
+    <p class="greet-sub">let's set you up and find your first thing to show up for. three quick steps, then you're rolling.</p>
+  </div></div>
+
+  <section class="card" id="card1">
+    <div class="card__head"><div class="steps"><span class="dot on"></span><span class="dot"></span><span class="dot"></span></div><span class="u-kicker">step 1 of 3</span></div>
+    <h2 class="card__title">first, the basics</h2>
+    <p class="card__sub">just enough to find the women near you. your name and email are already saved.</p>
+    <div class="field"><label>select your gender</label>
+      <div class="seg" id="genderSeg">
+        <button class="seg__opt" data-val="woman">woman</button>
+        <button class="seg__opt" data-val="non-binary">non-binary</button>
+        <button class="seg__opt" data-val="prefer not to say">prefer not to say</button>
+      </div>
+    </div>
+    <div class="field"><label>enter your birthday</label>
+      <button class="control" id="dobTrigger" aria-haspopup="true"><span class="ph" id="dobLabel">dd / mm / yyyy</span><span class="ico" data-lucide="calendar"></span></button>
+      <div id="dobPanel"></div>
+    </div>
+    <div class="field"><label>select your locale</label>
+      <button class="control" id="cityTrigger" aria-haspopup="true"><span class="ph" id="cityLabel">where you're based</span><span class="ico" data-lucide="chevron-down"></span></button>
+      <div id="cityPanel"></div>
+    </div>
+    <button class="cta" id="continueBtn" disabled>continue <span data-lucide="arrow-right"></span></button>
+  </section>
+
+  <section class="card" id="card2" hidden>
+    <div class="card__head"><button class="back" id="backBtn"><span data-lucide="chevron-left"></span> back</button><div class="steps"><span class="dot"></span><span class="dot on"></span><span class="dot"></span></div><span class="u-kicker">step 2 of 3</span></div>
+    <h2 class="card__title">curate your first experience</h2>
+    <p class="card__sub">build your own, or tap a suggestion below. either way, you'll have one thing on the calendar.</p>
+    <div class="field"><label>choose an experience</label>
+      <div id="expSlot"><button class="control" id="expTrigger" aria-haspopup="true"><span class="ph">browse all experiences</span><span class="ico" data-lucide="chevron-down"></span></button></div>
+      <div id="expPanel"></div>
+    </div>
+    <div class="field"><label id="dateLabel">pick your day</label>
+      <div id="dateSlot"><button class="control" id="dateTrigger" aria-haspopup="true"><span class="ph" id="datePh">choose a date this month</span><span class="ico" data-lucide="calendar"></span></button></div>
+      <div id="datePanel"></div>
+    </div>
+    <button class="cta" id="saveBtn" disabled>save my spot <span data-lucide="arrow-right"></span></button>
+    <p class="cta-note">then on to membership — that's where you'll meet your group.</p>
+    <div class="or"><span id="orLabel">or tap a suggestion</span></div>
+    <div class="invites" id="invites"></div>
+    <p class="foot-note">pick one and we'll hold your seat. you can always change it later.</p>
+  </section>
+
+  <section class="card" id="card3" hidden>
+    <div class="card__head"><button class="back" id="backBtn3"><span data-lucide="chevron-left"></span> back</button><div class="steps"><span class="dot"></span><span class="dot"></span><span class="dot on"></span></div><span class="u-kicker">step 3 of 3</span></div>
+    <h2 class="card__title">sort your membership and meet your group</h2>
+    <div class="m-hero">
+      <div class="m-hero__bar" id="m3bar"></div>
+      <div class="m-hero__body"><div class="m-hero__ico" id="m3ico"></div><div class="m-hero__txt"><div class="m-hero__title" id="m3title">your experience</div><div class="m-hero__meta" id="m3meta"><span data-lucide="clock"></span><span id="m3metaText"></span></div></div></div>
+    </div>
+    <div class="m-price"><span class="m-price__lbl">membership</span><span class="m-price__val">£23.99 <small>a month</small></span></div>
+    <div class="m-sub">your first experience and your group are included</div>
+    <div class="m-group"><span class="m-group__ico"><span data-lucide="users"></span></span><span>you, plus your 5 curated matches</span></div>
+    <div class="m-plus"><div class="m-plus__txt"><div class="m-plus__lbl">bringing someone? add a +1</div><div class="m-plus__note">they join your group and stay with you the whole time</div></div><button class="tog" id="plusTog" aria-pressed="false" aria-label="add a plus one"></button></div>
+    <div class="m-incl">
+      <div class="u-kicker" style="margin-bottom:8px">what's included</div>
+      <div class="inc-row"><span class="inc-ico"><span data-lucide="check"></span></span><span>every experience, every month</span></div>
+      <div class="inc-row"><span class="inc-ico"><span data-lucide="check"></span></span><span>your matches curated for you</span></div>
+      <div class="inc-row"><span class="inc-ico"><span data-lucide="check"></span></span><span>member prices on ticketed experiences</span></div>
+    </div>
+    <button class="cta" id="payBtn" style="margin-top:22px">continue to payment <span data-lucide="arrow-right"></span></button>
+    <p class="cta-note">recurring monthly. cancel anytime.</p>
+  </section>
+
+</div></div>
+</div>
+
+<script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
+<script>
+(function(){
+  var root = document.getElementById('ub-onb');
+  var $ = function(s){ return root.querySelector(s); };
+
+  function fillBlob(el){
+    var s = el.offsetWidth || 64;
+    el.style.height = s + 'px';
+    el.innerHTML =
+      '<span class="eye" style="top:'+(s*0.40)+'px;left:'+(s*0.30)+'px;width:'+(s*0.085)+'px;height:'+(s*0.12)+'px"></span>'+
+      '<span class="eye" style="top:'+(s*0.40)+'px;left:'+(s*0.585)+'px;width:'+(s*0.085)+'px;height:'+(s*0.12)+'px"></span>'+
+      '<span class="mouth" style="top:'+(s*0.56)+'px;left:'+(s*0.40)+'px;width:'+(s*0.18)+'px;height:'+(s*0.09)+'px"></span>';
+  }
+  function sizeBlob(el,s){ el.style.width=s+'px'; el.style.height=s+'px'; }
+  sizeBlob($('#heroBlob'),64);
+
+  var TOD = {
+    morning:   {label:'morning',   icon:'sunrise', pop:'var(--rose)',  tint:'var(--rose-tint)',  ink:'var(--rose-ink)',  s1:'#FBDDEC', s2:'#f6c9e1'},
+    afternoon: {label:'afternoon', icon:'sun',     pop:'var(--violet)',tint:'var(--violet-tint)',ink:'var(--violet-ink)',s1:'#E4DCFB', s2:'#d3c6f6'},
+    evening:   {label:'evening',   icon:'moon',    pop:'var(--sun)',   tint:'var(--sun-tint)',   ink:'var(--sun-ink)',   s1:'#DCE0FB', s2:'#c7cef6'}
+  };
+
+  var CITIES = ['london','manchester','birmingham','bristol','liverpool','glasgow','leeds','edinburgh','newcastle','belfast','sheffield','nottingham','cardiff','brighton','cambridge'];
+
+  // real experiences (from the experiences table), time-of-day from their default time
+  var EXPERIENCES = [
+    {name:'matcha & morning run club', tod:'morning'},
+    {name:'sea swim & sauna social', tod:'morning'},
+    {name:'reformer pilates & matcha', tod:'morning'},
+    {name:'sunday run club & coffee', tod:'morning'},
+    {name:'bouldering & smoothies', tod:'morning'},
+    {name:'pottery & prosecco: wheel throwing', tod:'afternoon'},
+    {name:'supper club & natural wine', tod:'evening'},
+    {name:"girls' dinner & woman-owned wine bar", tod:'evening'},
+    {name:'dinner & drinks at neighbourhood favourite', tod:'evening'},
+    {name:'listening bar & natural wine', tod:'evening'},
+    {name:'sip, paint & spritz night', tod:'evening'},
+    {name:'cocktail masterclass & small plates', tod:'evening'},
+    {name:'padel & spritz: doubles social', tod:'evening'},
+    {name:'pub pints & pictures: life drawing edition', tod:'evening'},
+    {name:"girls' night & y2k karaoke", tod:'evening'},
+    {name:'comedy night & cocktails', tod:'evening'},
+    {name:'sauna social & cold plunge', tod:'evening'},
+    {name:'open-air cinema & street food', tod:'evening'},
+    {name:'roller disco & street food', tod:'evening'}
+  ];
+
+  // three sample suggestions — one per time of day (placeholder until real scheduled instances exist)
+  var INVITES = [
+    {tod:'morning',   title:'matcha & morning run club', when:'sat · 8:30am', line:'coffee after, with the early risers.', cap:'candid: morning run'},
+    {tod:'afternoon', title:'pottery & prosecco: wheel throwing', when:'sun · 2:00pm', line:'hands messy, nothing to prove.', cap:'candid: pottery studio'},
+    {tod:'evening',   title:'supper club & natural wine', when:'fri · 7:30pm', line:'one long table, six new faces.', cap:'candid: supper club'}
+  ];
+
+  var MONTHS = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+  var MONTHS_SHORT = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  var DOW = ['mon','tue','wed','thu','fri','sat','sun'];
+  var DOW_FULL = ['sun','mon','tue','wed','thu','fri','sat'];
+
+  var today = new Date(); today.setHours(0,0,0,0);
+  var state = { gender:null, dob:null, city:null, exp:null, expDate:null };
+
+  function icon(name,attrs){ return '<span data-lucide="'+name+'" '+(attrs||'')+'></span>'; }
+  function closeAllPanels(except){
+    ['dobPanel','cityPanel','expPanel','datePanel'].forEach(function(id){ if(id!==except){ var p=$('#'+id); if(p) p.innerHTML=''; } });
+    root.querySelectorAll('.control.open,.control.cal-open').forEach(function(c){ c.classList.remove('open','cal-open'); });
+  }
+
+  function buildList(items, onPick){
+    var wrap=document.createElement('div'); wrap.className='panel';
+    var list=document.createElement('div'); list.className='list';
+    items.forEach(function(it){
+      var b=document.createElement('button'); b.className='list__item';
+      if(it.tod){ var t=TOD[it.tod];
+        b.innerHTML='<span class="lico" style="background:'+t.tint+';color:'+t.ink+'">'+icon(t.icon)+'</span><span>'+it.name+'</span><span class="tod">'+t.label+'</span>';
+      } else { b.innerHTML='<span>'+it.name+'</span>'; }
+      b.addEventListener('click', function(){ onPick(it); });
+      list.appendChild(b);
+    });
+    wrap.appendChild(list); return wrap;
+  }
+
+  function buildCalendar(opts){
+    var mode=opts.mode, selected=opts.selected, onPick=opts.onPick;
+    var wrap=document.createElement('div'); wrap.className='panel';
+    var cal=document.createElement('div'); cal.className='cal'; wrap.appendChild(cal);
+    var now=new Date();
+    var view = selected ? new Date(selected) : (mode==='dob' ? new Date(1998,5,1) : new Date(now.getFullYear(), now.getMonth(), 1));
+    view.setDate(1); var yearMode=false;
+    var minDob=new Date(1925,0,1);
+    var curMonthStart=new Date(now.getFullYear(), now.getMonth(), 1);
+    var curMonthEnd=new Date(now.getFullYear(), now.getMonth()+1, 0);
+    function sameDay(a,b){ return a&&b&&a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
+    function render(){
+      cal.innerHTML='';
+      var head=document.createElement('div'); head.className='cal__head';
+      var prev=document.createElement('button'); prev.className='cal__nav'; prev.innerHTML=icon('chevron-left');
+      var next=document.createElement('button'); next.className='cal__nav'; next.innerHTML=icon('chevron-right');
+      var title=document.createElement('button'); title.className='cal__title'+(mode==='month'?' static':'');
+      if(mode==='month'){ title.innerHTML=MONTHS[view.getMonth()]+' '+view.getFullYear()+' <span class="ms">· this month only</span>'; }
+      else { title.innerHTML=MONTHS[view.getMonth()]+' '+view.getFullYear()+' '+icon('chevron-down','style="width:14px;height:14px"');
+        title.addEventListener('click', function(){ yearMode=!yearMode; render(); }); }
+      if(mode==='month'){ prev.disabled=true; next.disabled=true; }
+      else {
+        prev.addEventListener('click', function(){ view.setMonth(view.getMonth()-1); render(); });
+        next.addEventListener('click', function(){ var cand=new Date(view.getFullYear(), view.getMonth()+1, 1); if(cand<=new Date(now.getFullYear(), now.getMonth(), 1)){ view=cand; render(); } });
+        var candN=new Date(view.getFullYear(), view.getMonth()+1, 1); if(candN>new Date(now.getFullYear(), now.getMonth(), 1)) next.disabled=true;
+      }
+      head.appendChild(prev); head.appendChild(title); head.appendChild(next); cal.appendChild(head);
+      if(yearMode){
+        var yg=document.createElement('div'); yg.className='cal__years';
+        for(var y=now.getFullYear(); y>=minDob.getFullYear(); y--){ (function(y){ var yb=document.createElement('button'); yb.className='cal__year'+(y===view.getFullYear()?' sel':''); yb.textContent=y; yb.addEventListener('click', function(){ view.setFullYear(y); yearMode=false; render(); }); yg.appendChild(yb); })(y); }
+        cal.appendChild(yg); return;
+      }
+      var dow=document.createElement('div'); dow.className='cal__dow'; DOW.forEach(function(d){ dow.innerHTML+='<span>'+d+'</span>'; }); cal.appendChild(dow);
+      var grid=document.createElement('div'); grid.className='cal__grid';
+      var first=new Date(view.getFullYear(), view.getMonth(), 1);
+      var lead=(first.getDay()+6)%7;
+      var daysInMonth=new Date(view.getFullYear(), view.getMonth()+1, 0).getDate();
+      var prevDays=new Date(view.getFullYear(), view.getMonth(), 0).getDate();
+      var cells=[];
+      for(var i=lead-1;i>=0;i--) cells.push({date:new Date(view.getFullYear(), view.getMonth()-1, prevDays-i), out:true});
+      for(var d=1; d<=daysInMonth; d++) cells.push({date:new Date(view.getFullYear(), view.getMonth(), d), out:false});
+      var nx=1; while(cells.length%7!==0) cells.push({date:new Date(view.getFullYear(), view.getMonth()+1, nx++), out:true});
+      cells.forEach(function(c){
+        var b=document.createElement('button'); b.className='cal__day'; var cellDate=c.date; b.textContent=cellDate.getDate();
+        var disabled=false;
+        if(c.out){ disabled=true; b.classList.add('muted'); }
+        if(mode==='month'){ if(cellDate<curMonthStart||cellDate>curMonthEnd){ disabled=true; b.classList.add('muted'); } if(cellDate<today){ disabled=true; b.classList.add('muted'); } }
+        else { if(cellDate>today){ disabled=true; b.classList.add('muted'); } }
+        if(sameDay(cellDate, today)) b.classList.add('today');
+        if(selected && sameDay(cellDate, selected)) b.classList.add('sel');
+        if(!disabled){ b.addEventListener('click', function(){ onPick(cellDate); }); }
+        grid.appendChild(b);
+      });
+      cal.appendChild(grid);
+    }
+    render(); return wrap;
+  }
+
+  // card 1 — gender
+  var genderSeg=$('#genderSeg');
+  genderSeg.querySelectorAll('.seg__opt').forEach(function(opt){
+    opt.addEventListener('click', function(){
+      genderSeg.querySelectorAll('.seg__opt').forEach(function(o){ o.classList.remove('on'); });
+      opt.classList.add('on'); state.gender=opt.dataset.val; refreshContinue();
+    });
+  });
+  var dobTrigger=$('#dobTrigger'), dobPanel=$('#dobPanel'), dobLabel=$('#dobLabel');
+  dobTrigger.addEventListener('click', function(){
+    if(dobPanel.innerHTML){ dobPanel.innerHTML=''; dobTrigger.classList.remove('cal-open'); return; }
+    closeAllPanels('dobPanel'); dobTrigger.classList.add('cal-open');
+    dobPanel.appendChild(buildCalendar({ mode:'dob', selected:state.dob, onPick:function(d){
+      state.dob=d; dobLabel.textContent=d.getDate()+' '+MONTHS_SHORT[d.getMonth()]+' '+d.getFullYear();
+      dobTrigger.classList.add('filled'); dobTrigger.classList.remove('cal-open'); dobPanel.innerHTML=''; refreshContinue();
+    }}));
+    lucide.createIcons();
+  });
+  var cityTrigger=$('#cityTrigger'), cityPanel=$('#cityPanel'), cityLabel=$('#cityLabel');
+  cityTrigger.addEventListener('click', function(){
+    if(cityPanel.innerHTML){ cityPanel.innerHTML=''; cityTrigger.classList.remove('open'); return; }
+    closeAllPanels('cityPanel'); cityTrigger.classList.add('open');
+    cityPanel.appendChild(buildList(CITIES.map(function(c){ return {name:c}; }), function(it){
+      state.city=it.name; cityLabel.textContent=it.name; cityTrigger.classList.add('filled'); cityTrigger.classList.remove('open'); cityPanel.innerHTML=''; refreshContinue();
+    }));
+    lucide.createIcons();
+  });
+  var continueBtn=$('#continueBtn');
+  function refreshContinue(){ continueBtn.disabled=!(state.gender&&state.dob&&state.city); }
+  continueBtn.addEventListener('click', function(){ if(continueBtn.disabled) return; closeAllPanels(); $('#card1').setAttribute('hidden',''); $('#card2').removeAttribute('hidden'); window.scrollTo({top:0,behavior:'smooth'}); });
+
+  // card 2 — experiences + date
+  var expSlot=$('#expSlot'), expPanel=$('#expPanel');
+  function renderExpTrigger(){
+    expSlot.innerHTML='';
+    var t=document.createElement('button'); t.className='control'; t.id='expTrigger';
+    t.innerHTML='<span class="ph">browse all experiences</span><span class="ico">'+icon('chevron-down')+'</span>';
+    t.addEventListener('click', function(){
+      if(expPanel.innerHTML){ expPanel.innerHTML=''; t.classList.remove('open'); return; }
+      closeAllPanels('expPanel'); t.classList.add('open');
+      expPanel.appendChild(buildList(EXPERIENCES, function(it){ state.exp=it; expPanel.innerHTML=''; renderExpChip(); refreshSave(); }));
+      lucide.createIcons();
+    });
+    expSlot.appendChild(t); lucide.createIcons();
+  }
+  function renderExpChip(){
+    expSlot.innerHTML='';
+    var wrap=document.createElement('div'); wrap.className='chip-wrap';
+    var chip=document.createElement('span'); chip.className='chip';
+    chip.innerHTML='<span class="nm">'+state.exp.name+'</span><button class="chip__x" aria-label="clear">'+icon('x')+'</button>';
+    chip.querySelector('.chip__x').addEventListener('click', function(){ state.exp=null; renderExpTrigger(); refreshSave(); });
+    wrap.appendChild(chip); expSlot.appendChild(wrap); lucide.createIcons();
+  }
+  var dateSlot=$('#dateSlot'), datePanel=$('#datePanel');
+  $('#dateLabel').textContent='pick your day in '+MONTHS[today.getMonth()];
+  $('#datePh').textContent='choose a date in '+MONTHS[today.getMonth()];
+  function renderDateTrigger(){
+    dateSlot.innerHTML='';
+    var t=document.createElement('button'); t.className='control'; t.id='dateTrigger';
+    t.innerHTML='<span class="ph">choose a date in '+MONTHS[today.getMonth()]+'</span><span class="ico">'+icon('calendar')+'</span>';
+    t.addEventListener('click', function(){
+      if(datePanel.innerHTML){ datePanel.innerHTML=''; t.classList.remove('cal-open'); return; }
+      closeAllPanels('datePanel'); t.classList.add('cal-open');
+      datePanel.appendChild(buildCalendar({ mode:'month', selected:state.expDate, onPick:function(d){ state.expDate=d; datePanel.innerHTML=''; renderDateChip(); refreshSave(); }}));
+      lucide.createIcons();
+    });
+    dateSlot.appendChild(t); lucide.createIcons();
+  }
+  function fmtDate(d){ return DOW_FULL[d.getDay()]+' '+d.getDate()+' '+MONTHS_SHORT[d.getMonth()]; }
+  function renderDateChip(){
+    dateSlot.innerHTML='';
+    var wrap=document.createElement('div'); wrap.className='chip-wrap';
+    var chip=document.createElement('span'); chip.className='chip';
+    chip.innerHTML='<span class="nm">'+fmtDate(state.expDate)+'</span><button class="chip__x" aria-label="clear">'+icon('x')+'</button>';
+    chip.querySelector('.chip__x').addEventListener('click', function(){ state.expDate=null; renderDateTrigger(); refreshSave(); });
+    wrap.appendChild(chip); dateSlot.appendChild(wrap); lucide.createIcons();
+  }
+  var saveBtn=$('#saveBtn');
+  function refreshSave(){ saveBtn.disabled=!(state.exp&&state.expDate); }
+  saveBtn.addEventListener('click', function(){ if(saveBtn.disabled) return; goToCard3(state.exp.name, fmtDate(state.expDate), state.exp.tod); });
+
+  var invitesEl=$('#invites');
+  INVITES.forEach(function(inv){
+    var t=TOD[inv.tod];
+    var card=document.createElement('button'); card.className='invite';
+    card.innerHTML=
+      '<div class="invite__ph" style="background:repeating-linear-gradient(45deg, '+t.s1+', '+t.s1+' 11px, '+t.s2+' 11px, '+t.s2+' 22px)">'+
+        '<span class="invite__tod" style="color:'+t.ink+'">'+icon(t.icon)+' '+t.label+'</span>'+
+        '<span class="invite__cap" style="color:'+t.ink+'">// '+inv.cap+'</span>'+
+      '</div>'+
+      '<div class="invite__body"><div class="invite__txt">'+
+        '<div class="invite__when" style="color:'+t.ink+'">'+inv.when+'</div>'+
+        '<div class="invite__title">'+inv.title+'</div>'+
+        '<div class="invite__line">'+inv.line+'</div>'+
+      '</div><span class="invite__go" style="background:'+t.pop+'">'+icon('arrow-right')+'</span></div>';
+    card.addEventListener('click', function(){ goToCard3(inv.title, inv.when, inv.tod); });
+    invitesEl.appendChild(card);
+  });
+
+  $('#backBtn').addEventListener('click', function(){ closeAllPanels(); $('#card2').setAttribute('hidden',''); $('#card1').removeAttribute('hidden'); window.scrollTo({top:0,behavior:'smooth'}); });
+
+  function goToCard3(title, meta, tod){
+    var t=TOD[tod]||TOD.morning;
+    $('#m3title').textContent=title; $('#m3metaText').textContent=meta;
+    $('#m3bar').style.background='repeating-linear-gradient(45deg, '+t.s1+', '+t.s1+' 10px, '+t.s2+' 10px, '+t.s2+' 20px)';
+    var ico=$('#m3ico'); ico.style.background=t.tint; ico.style.color=t.ink; ico.innerHTML=icon(t.icon);
+    closeAllPanels(); $('#card1').setAttribute('hidden',''); $('#card2').setAttribute('hidden',''); $('#card3').removeAttribute('hidden'); window.scrollTo({top:0,behavior:'smooth'}); lucide.createIcons();
+  }
+  $('#plusTog').addEventListener('click', function(){ var on=this.classList.toggle('on'); this.setAttribute('aria-pressed', on?'true':'false'); });
+  $('#backBtn3').addEventListener('click', function(){ $('#card3').setAttribute('hidden',''); $('#card2').removeAttribute('hidden'); window.scrollTo({top:0,behavior:'smooth'}); });
+  $('#payBtn').addEventListener('click', function(){ window.location.href='/paywall'; });
+
+  document.addEventListener('click', function(e){ if(e.target.closest('.field')||e.target.closest('.panel')) return; closeAllPanels(); });
+
+  // greeting — the member's first name from Softr's logged-in user (lowercase, brand voice)
+  (function(){
+    var n='there';
+    try { var u=window.logged_in_user; var f=u&&(u.softr_user_full_name||u.name||u.Name); if(f) n=String(f).trim().split(/\s+/)[0].toLowerCase(); } catch(e){}
+    $('#greet').innerHTML="you're in, <em>"+n+"</em>.";
+  })();
+
+  fillBlob($('#heroBlob'));
+  renderExpTrigger();
+  renderDateTrigger();
+  lucide.createIcons();
+})();
+</script>
