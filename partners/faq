@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 
-const UBP5_PARTNER_URL = "/partner-with-us";
+const UBP5_PARTNER_URL = "/partner-form";
 
 const UBP5_QAS = [
   ["how much does it cost?", "for dining and venues: \u00a32 to \u00a34 per member sent, charged only for those who check in via in-app tracking. if you're ever unhappy, we refund it. for curators: you set the price, we sell the tickets, you keep 90%."],

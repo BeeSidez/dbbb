@@ -1,4 +1,4 @@
-// unboring — partner application form (/partner-with-us) — multi-step slider
+// unboring — partner application form (/partner-form) — multi-step slider
 // One section per step; slides between them; branches by partner category at step 3.
 // Writes to the Enquires table; Enquiry Type is stamped "partner with us".
 // SELECT fields are written with EXACT option labels (must match the DB choices).

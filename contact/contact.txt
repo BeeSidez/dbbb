@@ -42,7 +42,7 @@ export default function Block() {
   const partnerLink = useNavigationSetting({
     name: "partner-link",
     label: "Partner Link",
-    initialValue: { destination: "/", openIn: "TAB" },
+    initialValue: { destination: "/partner", openIn: "TAB" },
   });
 
   const createRecord = useRecordCreate({
